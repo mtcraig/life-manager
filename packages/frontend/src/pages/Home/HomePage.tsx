@@ -11,9 +11,14 @@ function toIsoDate(date: Date): string {
 
 function MetricTile({ label, value, tone }: { label: string; value: number; tone: 'in' | 'out' | 'net' }) {
   const colorClass =
-    tone === 'in' ? 'text-green-700' : tone === 'out' ? 'text-red-600' : value >= 0 ? 'text-green-700' : 'text-red-600';
+    tone === 'in' ? 'text-green-700 dark:text-green-400'
+      : tone === 'out'
+        ? 'text-red-600 dark:text-red-400'
+        : value >= 0
+          ? 'text-green-700 dark:text-green-400'
+          : 'text-red-600 dark:text-red-400';
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-semibold ${colorClass}`}>{formatMoney(value)}</div>
     </div>
@@ -48,10 +53,10 @@ export function HomePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-slate-900">Home</h1>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Home</h1>
 
       {isMonthPending && <p className="text-sm text-slate-500">Loading…</p>}
-      {isMonthError && <p className="text-sm text-red-600">Failed to load this month's totals.</p>}
+      {isMonthError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load this month's totals.</p>}
       {monthFlow && (
         <div className="grid grid-cols-3 gap-4">
           <MetricTile label="Money in (this month)" value={monthFlow.totals.moneyIn} tone="in" />
@@ -60,12 +65,12 @@ export function HomePage() {
         </div>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-medium text-slate-700">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
           Daily money in/out — last 12 months (transfers excluded)
         </h2>
         {isYearPending && <p className="text-sm text-slate-500">Loading…</p>}
-        {isYearError && <p className="text-sm text-red-600">Failed to load the yearly heatmap.</p>}
+        {isYearError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the yearly heatmap.</p>}
         {yearFlow && <CalendarHeatmap days={heatmapDays} />}
       </div>
     </div>

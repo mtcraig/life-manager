@@ -8,29 +8,29 @@ export function IngestionHistorySettings() {
   const accountNameById = new Map(accounts?.map((a) => [a.id, a.name]));
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">Ingestion history</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Ingestion history</h2>
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load ingestion history.</p>}
-      <ul className="divide-y divide-slate-100">
+      {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load ingestion history.</p>}
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {events?.map((event) => (
           <li key={event.id} className="flex items-center justify-between py-2 text-sm">
             <div>
-              <span className="font-medium text-slate-900">
+              <span className="font-medium text-slate-900 dark:text-slate-100">
                 {event.accountId !== null ? (accountNameById.get(event.accountId) ?? event.accountId) : '—'}
               </span>
               <span className="ml-2 text-xs text-slate-500">
                 {event.fileName} · {event.source} · {new Date(event.ranAt).toLocaleString()}
               </span>
               {event.status === 'error' && (
-                <div className="text-xs text-red-600">{event.errorMessage}</div>
+                <div className="text-xs text-red-600 dark:text-red-400">{event.errorMessage}</div>
               )}
             </div>
             <div className="flex items-center gap-2">
               {event.status === 'success' ? (
-                <span className="text-xs text-green-700">{event.rowsIngested} ingested</span>
+                <span className="text-xs text-green-700 dark:text-green-400">{event.rowsIngested} ingested</span>
               ) : (
-                <span className="text-xs font-medium text-red-600">Failed</span>
+                <span className="text-xs font-medium text-red-600 dark:text-red-400">Failed</span>
               )}
             </div>
           </li>

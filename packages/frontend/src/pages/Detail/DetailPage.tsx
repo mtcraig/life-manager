@@ -27,10 +27,10 @@ export function DetailPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Detail</h1>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Detail</h1>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
-        <label className="text-sm text-slate-700">
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           Account
           <select
             value={accountId}
@@ -38,7 +38,7 @@ export function DetailPage() {
               setAccountId(e.target.value);
               setPage(1);
             }}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
             <option value="">All accounts</option>
             {accounts?.map((account) => (
@@ -48,7 +48,7 @@ export function DetailPage() {
             ))}
           </select>
         </label>
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           From
           <input
             type="date"
@@ -57,10 +57,10 @@ export function DetailPage() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           To
           <input
             type="date"
@@ -69,10 +69,10 @@ export function DetailPage() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-sm text-slate-700">
+        <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
           <input
             type="checkbox"
             checked={uncategorisedOnly}
@@ -85,13 +85,13 @@ export function DetailPage() {
         </label>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {isPending && <p className="p-4 text-sm text-slate-500">Loading…</p>}
-        {isError && <p className="p-4 text-sm text-red-600">Failed to load transactions.</p>}
+        {isError && <p className="p-4 text-sm text-red-600 dark:text-red-400">Failed to load transactions.</p>}
         {data && (
           <>
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 dark:bg-slate-800">
                 <tr>
                   <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Account</th>
@@ -100,12 +100,14 @@ export function DetailPage() {
                   <th className="px-4 py-2 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {data.items.map((tx) => (
                   <tr key={tx.id}>
-                    <td className="px-4 py-2">{tx.date}</td>
-                    <td className="px-4 py-2">{accountNameById.get(tx.accountId) ?? tx.accountId}</td>
-                    <td className="px-4 py-2">{tx.description}</td>
+                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">{tx.date}</td>
+                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">
+                      {accountNameById.get(tx.accountId) ?? tx.accountId}
+                    </td>
+                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">{tx.description}</td>
                     <td className="px-4 py-2">
                       <select
                         value={tx.categoryId ?? ''}
@@ -115,8 +117,10 @@ export function DetailPage() {
                             input: { categoryId: e.target.value ? Number(e.target.value) : null },
                           })
                         }
-                        className={`rounded-md border border-slate-300 px-1.5 py-0.5 text-xs ${
-                          tx.categoryId === null ? 'text-amber-600' : 'text-slate-700'
+                        className={`rounded-md border border-slate-300 px-1.5 py-0.5 text-xs dark:border-slate-700 dark:bg-slate-800 ${
+                          tx.categoryId === null
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <option value="">Uncategorised</option>
@@ -128,7 +132,9 @@ export function DetailPage() {
                       </select>
                     </td>
                     <td
-                      className={`px-4 py-2 text-right ${tx.amount < 0 ? 'text-red-600' : 'text-green-700'}`}
+                      className={`px-4 py-2 text-right ${
+                        tx.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'
+                      }`}
                     >
                       {formatMoney(tx.amount)}
                     </td>
@@ -143,7 +149,7 @@ export function DetailPage() {
                 )}
               </tbody>
             </table>
-            <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2 text-sm text-slate-600">
+            <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400">
               <span>
                 {data.total} total · page {data.page}
               </span>
@@ -151,14 +157,14 @@ export function DetailPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-xs disabled:opacity-50"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs disabled:opacity-50 dark:border-slate-700"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={data.items.length < data.pageSize}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-xs disabled:opacity-50"
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs disabled:opacity-50 dark:border-slate-700"
                 >
                   Next
                 </button>

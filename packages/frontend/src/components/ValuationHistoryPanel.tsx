@@ -49,7 +49,7 @@ export function ValuationHistoryPanel({
   }
 
   return (
-    <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
+    <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {valuations && valuations.length === 0 && (
         <p className="text-sm text-slate-500">No valuations recorded yet.</p>
@@ -57,17 +57,17 @@ export function ValuationHistoryPanel({
       {valuations && valuations.length > 0 && <ValuationTrendChart valuations={valuations} />}
 
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2">
-        <label className="text-xs text-slate-700">
+        <label className="text-xs text-slate-700 dark:text-slate-300">
           As of date
           <input
             type="date"
             required
             value={asOfDate}
             onChange={(e) => setAsOfDate(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="text-xs text-slate-700">
+        <label className="text-xs text-slate-700 dark:text-slate-300">
           Value (£)
           <input
             type="number"
@@ -75,33 +75,33 @@ export function ValuationHistoryPanel({
             required
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="mt-1 block w-32 rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block w-32 rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="text-xs text-slate-700">
+        <label className="text-xs text-slate-700 dark:text-slate-300">
           Notes
           <input
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
         <button
           type="submit"
           disabled={isAdding}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           {isAdding ? 'Adding…' : 'Add valuation'}
         </button>
       </form>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
       {valuations && valuations.length > 0 && (
-        <ul className="divide-y divide-slate-100 text-sm">
+        <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
           {[...valuations].reverse().map((v) => (
             <li key={v.id} className="flex justify-between py-1">
-              <span className="text-slate-600">{v.asOfDate}</span>
-              <span className="font-medium text-slate-900">{formatMoney(v.value)}</span>
+              <span className="text-slate-600 dark:text-slate-400">{v.asOfDate}</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{formatMoney(v.value)}</span>
             </li>
           ))}
         </ul>

@@ -8,6 +8,7 @@ import {
   useEnergyReadings,
 } from '../../hooks/useEnergy.js';
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 const DEFAULT_UNIT_BY_METER: Record<MeterType, EnergyUnit> = {
   electricity: 'kWh',
@@ -51,12 +52,12 @@ function AddReadingForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Meter
         <select
           value={meterType}
           onChange={(e) => handleMeterTypeChange(e.target.value as MeterType)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
           {METER_TYPES.map((type) => (
             <option key={type} value={type}>
@@ -65,17 +66,17 @@ function AddReadingForm() {
           ))}
         </select>
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Reading date
         <input
           required
           type="date"
           value={readingDate}
           onChange={(e) => setReadingDate(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Value
         <input
           required
@@ -83,15 +84,15 @@ function AddReadingForm() {
           step="0.01"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Unit
         <select
           value={unit}
           onChange={(e) => setUnit(e.target.value as EnergyUnit)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
           {ENERGY_UNITS.map((u) => (
             <option key={u} value={u}>
@@ -100,24 +101,20 @@ function AddReadingForm() {
           ))}
         </select>
       </label>
-      <label className="text-sm text-slate-700 sm:col-span-2">
+      <label className="text-sm text-slate-700 dark:text-slate-300 sm:col-span-2">
         Notes (optional)
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
       <div className="flex items-end">
-        <button
-          type="submit"
-          disabled={createReading.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={createReading.isPending} className={BTN_PRIMARY}>
           {createReading.isPending ? 'Adding…' : 'Add reading'}
         </button>
       </div>
-      {error && <p className="col-span-full text-sm text-red-600">{error}</p>}
+      {error && <p className="col-span-full text-sm text-red-600 dark:text-red-400">{error}</p>}
     </form>
   );
 }
@@ -154,18 +151,18 @@ function BulkImportForm() {
         onChange={(e) => setCsvContent(e.target.value)}
         rows={6}
         placeholder="meterType,readingDate,value,unit,notes"
-        className="w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs"
+        className="w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
       />
       <button
         type="submit"
         disabled={bulkImport.isPending || csvContent.trim().length === 0}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+        className={BTN_PRIMARY}
       >
         {bulkImport.isPending ? 'Importing…' : 'Import CSV'}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       {result && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Imported {result.readingsCreated} reading{result.readingsCreated === 1 ? '' : 's'}, skipped{' '}
           {result.readingsSkipped} duplicate{result.readingsSkipped === 1 ? '' : 's'}.
         </p>
@@ -179,7 +176,7 @@ function ReadingsList() {
   const deleteReading = useDeleteEnergyReading();
 
   if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
-  if (isError) return <p className="text-sm text-red-600">Failed to load energy readings.</p>;
+  if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load energy readings.</p>;
   if (!readings || readings.length === 0) {
     return <p className="text-sm text-slate-500">No readings yet — add one above.</p>;
   }
@@ -187,12 +184,12 @@ function ReadingsList() {
   const sorted = [...readings].sort((a, b) => b.readingDate.localeCompare(a.readingDate));
 
   return (
-    <ul className="divide-y divide-slate-100">
+    <ul className="divide-y divide-slate-100 dark:divide-slate-800">
       {sorted.map((reading) => (
         <li key={reading.id} className="flex items-center justify-between py-2">
           <div>
-            <span className="font-medium text-slate-900">{reading.meterType}</span>{' '}
-            <span className="text-sm text-slate-600">
+            <span className="font-medium text-slate-900 dark:text-slate-100">{reading.meterType}</span>{' '}
+            <span className="text-sm text-slate-600 dark:text-slate-400">
               {reading.value} {reading.unit}
             </span>{' '}
             <span className="text-xs text-slate-500">on {reading.readingDate}</span>
@@ -200,7 +197,7 @@ function ReadingsList() {
           </div>
           <button
             onClick={() => deleteReading.mutate(reading.id)}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Delete
           </button>
@@ -222,8 +219,13 @@ function UsageCharts() {
         const firstReading = readingsForMeter[0];
         if (!firstReading) return null;
         return (
-          <div key={meterType} className="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold capitalize text-slate-900">{meterType}</h3>
+          <div
+            key={meterType}
+            className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+          >
+            <h3 className="mb-2 text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
+              {meterType}
+            </h3>
             <EnergyUsageChart readings={readingsForMeter} unit={firstReading.unit} />
           </div>
         );
@@ -235,22 +237,22 @@ function UsageCharts() {
 export function EnergyPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Energy</h1>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Energy</h1>
 
       <UsageCharts />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Add reading</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add reading</h2>
         <AddReadingForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Bulk import (CSV)</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Bulk import (CSV)</h2>
         <BulkImportForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Readings</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Readings</h2>
         <ReadingsList />
       </section>
     </div>
