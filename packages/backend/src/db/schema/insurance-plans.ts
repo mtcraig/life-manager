@@ -1,0 +1,15 @@
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+
+export const insurancePlans = sqliteTable('insurance_plans', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  coverageAmount: integer('coverage_amount').notNull(),
+  premiumAmount: integer('premium_amount').notNull(),
+  premiumFrequency: text('premium_frequency').notNull(),
+  renewalDate: text('renewal_date').notNull(),
+  provider: text('provider'),
+  notes: text('notes'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
