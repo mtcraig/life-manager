@@ -9,6 +9,7 @@ import {
   useDeleteCategorisationRule,
   useRecategoriseUncategorised,
 } from '../../hooks/useCategorisationRules.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 const NEW_CATEGORY_VALUE = '__new__';
 
@@ -113,26 +114,26 @@ export function CategorisationRulesSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Add categorisation rule</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add categorisation rule</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Pattern
               <input
                 required
                 value={pattern}
                 onChange={(e) => setPattern(e.target.value)}
                 placeholder="e.g. tesco"
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Category
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="">Select a category</option>
                 {categories?.map((c) => (
@@ -144,21 +145,21 @@ export function CategorisationRulesSettings() {
               </select>
             </label>
             {categoryId === NEW_CATEGORY_VALUE && (
-              <label className="text-sm text-slate-700">
+              <label className="text-sm text-slate-700 dark:text-slate-300">
                 New category name
                 <input
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 />
               </label>
             )}
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Match type
               <select
                 value={matchType}
                 onChange={(e) => setMatchType(e.target.value as CreateCategorisationRuleInput['matchType'])}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 {MATCH_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -167,33 +168,31 @@ export function CategorisationRulesSettings() {
                 ))}
               </select>
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Priority (higher wins ties)
               <input
                 type="number"
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
           </div>
 
-          {formError && <p className="text-sm text-red-600">{formError}</p>}
+          {formError && <p className="text-sm text-red-600 dark:text-red-400">{formError}</p>}
 
-          <button
-            type="submit"
-            disabled={createRule.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={createRule.isPending} className={BTN_PRIMARY}>
             {createRule.isPending ? 'Adding…' : 'Add rule'}
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Bulk import from spreadsheet CSV</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Bulk import from spreadsheet CSV
+        </h2>
         <form onSubmit={handleBulkImport} className="space-y-3">
-          <label className="block text-sm text-slate-700">
+          <label className="block text-sm text-slate-700 dark:text-slate-300">
             CSV content
             <textarea
               required
@@ -201,66 +200,68 @@ export function CategorisationRulesSettings() {
               onChange={(e) => setCsvContent(e.target.value)}
               rows={6}
               placeholder="Pattern,Category&#10;tesco,Groceries&#10;..."
-              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs"
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
           </label>
           <div className="grid grid-cols-3 gap-3">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Pattern column header
               <input
                 value={patternColumn}
                 onChange={(e) => setPatternColumn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Category column header
               <input
                 value={categoryColumn}
                 onChange={(e) => setCategoryColumn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Match type column header (optional)
               <input
                 value={matchTypeColumn}
                 onChange={(e) => setMatchTypeColumn(e.target.value)}
                 placeholder="defaults to fuzzy"
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
           </div>
-          {importMessage && <p className="text-sm text-slate-600">{importMessage}</p>}
+          {importMessage && <p className="text-sm text-slate-600 dark:text-slate-400">{importMessage}</p>}
           <button
             type="submit"
             disabled={bulkImport.isPending}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {bulkImport.isPending ? 'Importing…' : 'Import rules'}
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Rules</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Rules</h2>
           <button
             onClick={handleRecategorise}
             disabled={recategorise.isPending}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {recategorise.isPending ? 'Recategorising…' : 'Recategorise Uncategorised transactions'}
           </button>
         </div>
-        {recategoriseMessage && <p className="mb-2 text-sm text-slate-600">{recategoriseMessage}</p>}
+        {recategoriseMessage && (
+          <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{recategoriseMessage}</p>
+        )}
         {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-        {isError && <p className="text-sm text-red-600">Failed to load categorisation rules.</p>}
-        <ul className="divide-y divide-slate-100">
+        {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load categorisation rules.</p>}
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {rules?.map((rule: CategorisationRuleDto) => (
             <li key={rule.id} className="flex items-center justify-between py-2">
               <div>
-                <span className="font-medium text-slate-900">{rule.pattern}</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{rule.pattern}</span>
                 <span className="ml-2 text-xs text-slate-500">
                   → {categoryNameById.get(rule.categoryId) ?? rule.categoryId} · {rule.matchType} · priority{' '}
                   {rule.priority} · {rule.source}
@@ -268,7 +269,7 @@ export function CategorisationRulesSettings() {
               </div>
               <button
                 onClick={() => deleteRule.mutate(rule.id)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Delete
               </button>

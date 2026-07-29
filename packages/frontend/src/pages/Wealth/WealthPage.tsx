@@ -17,11 +17,17 @@ import {
 } from '../../hooks/useLiabilities.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 function SummaryTile({ label, value, tone }: { label: string; value: number; tone?: 'positive' | 'negative' }) {
-  const color = tone === 'negative' ? 'text-red-600' : tone === 'positive' ? 'text-green-700' : 'text-slate-900';
+  const color =
+    tone === 'negative'
+      ? 'text-red-600 dark:text-red-400'
+      : tone === 'positive'
+        ? 'text-green-700 dark:text-green-400'
+        : 'text-slate-900 dark:text-slate-100';
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-semibold ${color}`}>{formatMoney(value)}</div>
     </div>
@@ -51,41 +57,37 @@ function PropertiesSection() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">Properties</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Properties</h2>
       <form onSubmit={handleSubmit} className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           Name
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           Address
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <button
-          type="submit"
-          disabled={createProperty.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={createProperty.isPending} className={BTN_PRIMARY}>
           {createProperty.isPending ? 'Adding…' : 'Add property'}
         </button>
       </form>
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load properties.</p>}
+      {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load properties.</p>}
       {properties && properties.length === 0 && (
         <p className="text-sm text-slate-500">No properties yet — add one above.</p>
       )}
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {properties?.map((property) => (
           <li key={property.id} className="py-3">
             <div className="flex items-center justify-between">
@@ -93,16 +95,16 @@ function PropertiesSection() {
                 onClick={() => setExpandedId(expandedId === property.id ? null : property.id)}
                 className="text-left"
               >
-                <span className="font-medium text-slate-900">{property.name}</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{property.name}</span>
                 {property.address && <span className="ml-2 text-xs text-slate-500">{property.address}</span>}
               </button>
               <div className="flex items-center gap-3">
-                <span className="font-medium text-slate-900">
+                <span className="font-medium text-slate-900 dark:text-slate-100">
                   {property.currentValue !== null ? formatMoney(property.currentValue) : '—'}
                 </span>
                 <button
                   onClick={() => archiveProperty.mutate(property.id)}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   Archive
                 </button>
@@ -146,42 +148,38 @@ function LiabilitiesSection() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">Liabilities</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Liabilities</h2>
       <form onSubmit={handleSubmit} className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           Name
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           Kind
           <input
             value={kind}
             onChange={(e) => setKind(e.target.value)}
             placeholder="e.g. mortgage, loan"
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <button
-          type="submit"
-          disabled={createLiability.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={createLiability.isPending} className={BTN_PRIMARY}>
           {createLiability.isPending ? 'Adding…' : 'Add liability'}
         </button>
       </form>
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load liabilities.</p>}
+      {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load liabilities.</p>}
       {liabilities && liabilities.length === 0 && (
         <p className="text-sm text-slate-500">No liabilities yet — add one above.</p>
       )}
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {liabilities?.map((liability) => (
           <li key={liability.id} className="py-3">
             <div className="flex items-center justify-between">
@@ -189,16 +187,16 @@ function LiabilitiesSection() {
                 onClick={() => setExpandedId(expandedId === liability.id ? null : liability.id)}
                 className="text-left"
               >
-                <span className="font-medium text-slate-900">{liability.name}</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{liability.name}</span>
                 {liability.kind && <span className="ml-2 text-xs text-slate-500">{liability.kind}</span>}
               </button>
               <div className="flex items-center gap-3">
-                <span className="font-medium text-slate-900">
+                <span className="font-medium text-slate-900 dark:text-slate-100">
                   {liability.currentValue !== null ? formatMoney(liability.currentValue) : '—'}
                 </span>
                 <button
                   onClick={() => archiveLiability.mutate(liability.id)}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   Archive
                 </button>
@@ -224,10 +222,10 @@ export function WealthPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Wealth</h1>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Wealth</h1>
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load the wealth summary.</p>}
+      {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the wealth summary.</p>}
       {summary && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

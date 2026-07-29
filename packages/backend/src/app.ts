@@ -17,6 +17,7 @@ import { insuranceRoutes } from './modules/insurance/routes';
 import { areaRoutes } from './modules/areas/routes';
 import { contentsRoutes } from './modules/contents/routes';
 import { energyRoutes } from './modules/energy/routes';
+import { databaseRoutes } from './modules/database/routes';
 
 export async function buildFastifyApp() {
   const app = Fastify({ logger: true });
@@ -40,6 +41,7 @@ export async function buildFastifyApp() {
   await app.register(areaRoutes, { prefix: '/api' });
   await app.register(contentsRoutes, { prefix: '/api' });
   await app.register(energyRoutes, { prefix: '/api' });
+  await app.register(databaseRoutes, { prefix: '/api' });
 
   return app;
 }

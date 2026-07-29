@@ -7,6 +7,7 @@ import {
   useCreateAccount,
   useIngestAccount,
 } from '../../hooks/useAccounts.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 const EMPTY_FORM: CreateAccountInput = {
   name: '',
@@ -76,25 +77,25 @@ export function AccountsSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Add account</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add account</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Name
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Type
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as CreateAccountInput['type'] })}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 {ACCOUNT_TYPES.map((type) => (
                   <option key={type} value={type}>
@@ -103,22 +104,22 @@ export function AccountsSettings() {
                 ))}
               </select>
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Institution (optional)
               <input
                 value={form.institution ?? ''}
                 onChange={(e) => setForm({ ...form, institution: e.target.value || undefined })}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
             </label>
-            <label className="text-sm text-slate-700">
+            <label className="text-sm text-slate-700 dark:text-slate-300">
               Ingestion mode
               <select
                 value={form.ingestionMode}
                 onChange={(e) =>
                   setForm({ ...form, ingestionMode: e.target.value as CreateAccountInput['ingestionMode'] })
                 }
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 {INGESTION_MODES.map((mode) => (
                   <option key={mode} value={mode}>
@@ -129,20 +130,20 @@ export function AccountsSettings() {
             </label>
           </div>
 
-          <label className="block text-sm text-slate-700">
+          <label className="block text-sm text-slate-700 dark:text-slate-300">
             CSV folder path (leave blank if this account has no CSV ingestion yet)
             <input
               value={form.folderPath ?? ''}
               onChange={(e) => setForm({ ...form, folderPath: e.target.value || undefined })}
               placeholder="C:/Users/you/Documents/Life Manager/accounts/current-account"
-              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
           </label>
 
           {form.folderPath && (
-            <div className="rounded-md border border-slate-100 bg-slate-50 p-3">
-              <h3 className="mb-2 text-sm font-medium text-slate-800">CSV column mapping</h3>
-              <div className="mb-2 flex gap-4 text-sm text-slate-700">
+            <div className="rounded-md border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950">
+              <h3 className="mb-2 text-sm font-medium text-slate-800 dark:text-slate-200">CSV column mapping</h3>
+              <div className="mb-2 flex gap-4 text-sm text-slate-700 dark:text-slate-300">
                 <label className="flex items-center gap-1">
                   <input
                     type="radio"
@@ -161,20 +162,20 @@ export function AccountsSettings() {
                 </label>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-sm text-slate-700">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
                   Date column header
                   <input
                     value={dateColumn}
                     onChange={(e) => setDateColumn(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </label>
-                <label className="text-sm text-slate-700">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
                   Date format
                   <select
                     value={dateFormat}
                     onChange={(e) => setDateFormat(e.target.value as (typeof DATE_FORMATS)[number])}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   >
                     {DATE_FORMATS.map((f) => (
                       <option key={f} value={f}>
@@ -183,78 +184,74 @@ export function AccountsSettings() {
                     ))}
                   </select>
                 </label>
-                <label className="text-sm text-slate-700">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
                   Description column header
                   <input
                     value={descriptionColumn}
                     onChange={(e) => setDescriptionColumn(e.target.value)}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </label>
                 {amountMode === 'signed' ? (
-                  <label className="text-sm text-slate-700">
+                  <label className="text-sm text-slate-700 dark:text-slate-300">
                     Amount column header
                     <input
                       value={amountColumn}
                       onChange={(e) => setAmountColumn(e.target.value)}
-                      className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                      className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     />
                   </label>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    <label className="text-sm text-slate-700">
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
                       Debit column header
                       <input
                         value={debitColumn}
                         onChange={(e) => setDebitColumn(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       />
                     </label>
-                    <label className="text-sm text-slate-700">
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
                       Credit column header
                       <input
                         value={creditColumn}
                         onChange={(e) => setCreditColumn(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       />
                     </label>
                   </div>
                 )}
-                <label className="text-sm text-slate-700">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
                   Balance column header (optional)
                   <input
                     value={balanceColumn}
                     onChange={(e) => setBalanceColumn(e.target.value)}
                     placeholder="e.g. Balance"
-                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </label>
               </div>
             </div>
           )}
 
-          {formError && <p className="text-sm text-red-600">{formError}</p>}
+          {formError && <p className="text-sm text-red-600 dark:text-red-400">{formError}</p>}
 
-          <button
-            type="submit"
-            disabled={createAccount.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={createAccount.isPending} className={BTN_PRIMARY}>
             {createAccount.isPending ? 'Adding…' : 'Add account'}
           </button>
         </form>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Accounts</h2>
-        {ingestMessage && <p className="mb-2 text-sm text-slate-600">{ingestMessage}</p>}
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
+        {ingestMessage && <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{ingestMessage}</p>}
         {isPending && <p className="text-sm text-slate-500">Loading…</p>}
-        {isError && <p className="text-sm text-red-600">Failed to load accounts.</p>}
-        <ul className="divide-y divide-slate-100">
+        {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load accounts.</p>}
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts?.map((account: AccountDto) => (
             <li key={account.id} className="flex items-center justify-between py-2">
               <div>
-                <span className="font-medium text-slate-900">{account.name}</span>
+                <span className="font-medium text-slate-900 dark:text-slate-100">{account.name}</span>
                 <span className="ml-2 text-xs text-slate-500">
                   {account.type} · {account.ingestionMode}
                   {account.archivedAt ? ' · archived' : ''}
@@ -268,7 +265,7 @@ export function AccountsSettings() {
                   <button
                     onClick={() => handleIngest(account.id)}
                     disabled={ingestAccount.isPending}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Ingest now
                   </button>
@@ -276,7 +273,7 @@ export function AccountsSettings() {
                 {!account.archivedAt && (
                   <button
                     onClick={() => archiveAccount.mutate(account.id)}
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
                     Archive
                   </button>

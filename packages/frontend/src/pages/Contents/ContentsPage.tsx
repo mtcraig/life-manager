@@ -7,6 +7,7 @@ import {
   useDeleteContentsItem,
 } from '../../hooks/useContents.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 function AreaManager() {
   const { data: areas, isPending, isError } = useAreas();
@@ -34,28 +35,24 @@ function AreaManager() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900">Areas</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Areas</h2>
       <form onSubmit={handleSubmit} className="mb-3 flex items-end gap-3">
-        <label className="text-sm text-slate-700">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
           New area name
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
-        <button
-          type="submit"
-          disabled={createArea.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={createArea.isPending} className={BTN_PRIMARY}>
           {createArea.isPending ? 'Adding…' : 'Add area'}
         </button>
       </form>
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-      {isError && <p className="mb-2 text-sm text-red-600">Failed to load areas.</p>}
+      {error && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {isError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">Failed to load areas.</p>}
       {isPending ? (
         <p className="text-sm text-slate-500">Loading…</p>
       ) : (
@@ -63,12 +60,12 @@ function AreaManager() {
           {areas?.map((area) => (
             <li
               key={area.id}
-              className="flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700"
+              className="flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-300"
             >
               {area.name}
               <button
                 onClick={() => handleDelete(area.id)}
-                className="text-slate-400 hover:text-red-600"
+                className="text-slate-400 hover:text-red-600 dark:hover:text-red-400"
                 aria-label={`Delete ${area.name}`}
               >
                 ×
@@ -115,22 +112,22 @@ function AddContentsItemForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Name
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Area
         <select
           required
           value={areaId}
           onChange={(e) => setAreaId(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         >
           <option value="" disabled>
             Select an area
@@ -142,7 +139,7 @@ function AddContentsItemForm() {
           ))}
         </select>
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Value (£)
         <input
           required
@@ -150,36 +147,32 @@ function AddContentsItemForm() {
           step="0.01"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
-      <label className="text-sm text-slate-700">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Purchase date (optional)
         <input
           type="date"
           value={purchaseDate}
           onChange={(e) => setPurchaseDate(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
-      <label className="text-sm text-slate-700 sm:col-span-2">
+      <label className="text-sm text-slate-700 dark:text-slate-300 sm:col-span-2">
         Notes (optional)
         <input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
       <div className="flex items-end">
-        <button
-          type="submit"
-          disabled={createItem.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={createItem.isPending} className={BTN_PRIMARY}>
           {createItem.isPending ? 'Adding…' : 'Add item'}
         </button>
       </div>
-      {error && <p className="col-span-full text-sm text-red-600">{error}</p>}
+      {error && <p className="col-span-full text-sm text-red-600 dark:text-red-400">{error}</p>}
     </form>
   );
 }
@@ -192,7 +185,7 @@ function ContentsItemsList() {
   const areaNameById = new Map((areas ?? []).map((area) => [area.id, area.name]));
 
   if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
-  if (isError) return <p className="text-sm text-red-600">Failed to load contents items.</p>;
+  if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load contents items.</p>;
   if (!items || items.length === 0) {
     return <p className="text-sm text-slate-500">No contents items yet — add one above.</p>;
   }
@@ -201,11 +194,11 @@ function ContentsItemsList() {
 
   return (
     <div>
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between py-3">
             <div>
-              <div className="font-medium text-slate-900">{item.name}</div>
+              <div className="font-medium text-slate-900 dark:text-slate-100">{item.name}</div>
               <div className="text-xs text-slate-500">
                 {areaNameById.get(item.areaId) ?? 'Unknown area'}
                 {item.purchaseDate ? ` · purchased ${item.purchaseDate}` : ''}
@@ -213,10 +206,10 @@ function ContentsItemsList() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="font-medium text-slate-900">{formatMoney(item.value)}</span>
+              <span className="font-medium text-slate-900 dark:text-slate-100">{formatMoney(item.value)}</span>
               <button
                 onClick={() => deleteItem.mutate(item.id)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Delete
               </button>
@@ -224,7 +217,9 @@ function ContentsItemsList() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-right text-sm font-medium text-slate-900">Total: {formatMoney(total)}</p>
+      <p className="mt-3 text-right text-sm font-medium text-slate-900 dark:text-slate-100">
+        Total: {formatMoney(total)}
+      </p>
     </div>
   );
 }
@@ -232,17 +227,17 @@ function ContentsItemsList() {
 export function ContentsPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Contents</h1>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Contents</h1>
 
       <AreaManager />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Add item</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add item</h2>
         <AddContentsItemForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Items</h2>
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Items</h2>
         <ContentsItemsList />
       </section>
     </div>
