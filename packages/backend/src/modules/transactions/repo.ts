@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import type { TransactionListQuery } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { transactions } from '../../db/schema/transactions';
@@ -93,6 +93,19 @@ export function insertTransactions(
 
 export function listUncategorised(): TransactionRow[] {
   return db.select().from(transactions).where(isNull(transactions.categoryId)).all();
+}
+
+/**
+ * Transactions eligible for automatic re-matching when rules change: never
+ * categorised, or last categorised by a rule (not a manual override, which
+ * must never be silently overwritten by a rule change).
+ */
+export function listUncategorisedOrRuleSourced(): TransactionRow[] {
+  return db
+    .select()
+    .from(transactions)
+    .where(or(isNull(transactions.categoryId), eq(transactions.categorySource, 'rule')))
+    .all();
 }
 
 export function setTransactionCategory(

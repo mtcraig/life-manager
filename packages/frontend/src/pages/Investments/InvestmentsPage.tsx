@@ -15,7 +15,7 @@ import {
 } from '../../hooks/useProjectionScenarios.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 function AddInvestmentForm() {
   const createInvestment = useCreateInvestment();
@@ -121,23 +121,25 @@ function ProjectionScenarioRow({ id, name }: { id: number; name: string }) {
   const deleteScenario = useDeleteProjectionScenario();
 
   return (
-    <li className="flex items-center justify-between py-2">
-      <div>
+    <li className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+      <div className="flex items-center justify-between">
         <span className="font-medium text-slate-900 dark:text-slate-100">{name}</span>
-        {!isPending && result && (
-          <span className="ml-2 text-xs text-slate-500">
-            {result.projectedValue !== null
-              ? `→ ${formatMoney(result.projectedValue)} in ${result.months} months`
-              : 'set a retirement date to see a projection'}
-          </span>
-        )}
+        <button onClick={() => deleteScenario.mutate(id)} className={BTN_ROW_ACTION}>
+          Delete
+        </button>
       </div>
-      <button
-        onClick={() => deleteScenario.mutate(id)}
-        className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-      >
-        Delete
-      </button>
+      {!isPending && result && (
+        result.projectedValue !== null ? (
+          <div className="mt-2 rounded-md bg-slate-50 px-3 py-2 dark:bg-slate-800">
+            <div className="text-2xl font-semibold text-green-700 dark:text-green-400">
+              {formatMoney(result.projectedValue)}
+            </div>
+            <div className="text-xs text-slate-500">projected in {result.months} months</div>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">Set a retirement date to see a projection.</p>
+        )
+      )}
     </li>
   );
 }
@@ -242,7 +244,7 @@ function ProjectionScenarios() {
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load projection scenarios.</p>}
-      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+      <ul className="space-y-2">
         {scenarios?.map((scenario) => (
           <ProjectionScenarioRow key={scenario.id} id={scenario.id} name={scenario.name} />
         ))}

@@ -9,6 +9,7 @@ import type {
 import { HttpError } from '../../lib/httpError';
 import * as categoriesRepo from '../categories/repo';
 import * as transactionsRepo from '../transactions/repo';
+import type { TransactionRow } from '../transactions/repo';
 import * as repo from './repo';
 import type { CategorisationRuleRow } from './repo';
 import { matchDescription } from './fuzzyMatcher';
@@ -56,6 +57,7 @@ export function createRule(input: CreateCategorisationRuleInput): Categorisation
     priority: input.priority,
     source: 'manual',
   });
+  reapplyRulesTo(transactionsRepo.listUncategorisedOrRuleSourced());
   return toDto(row);
 }
 
@@ -73,6 +75,7 @@ export function updateRule(id: number, input: UpdateCategorisationRuleInput): Ca
     ...(input.matchType !== undefined && { matchType: input.matchType }),
     ...(input.priority !== undefined && { priority: input.priority }),
   });
+  reapplyRulesTo(transactionsRepo.listUncategorisedOrRuleSourced());
   return toDto(row as NonNullable<typeof row>);
 }
 
@@ -131,18 +134,35 @@ export function bulkImportRules(input: BulkImportRulesInput): BulkImportRulesRes
   return { rulesCreated, categoriesCreated };
 }
 
-/** Re-runs matching over every currently-Uncategorised transaction using the latest rule set. */
-export function recategoriseUncategorised(): { updated: number } {
+/**
+ * Re-runs matching for the given candidate transactions against the current
+ * rule set. Only rule-sourced or never-categorised transactions should ever
+ * be passed in here — manually-set categories must never be overwritten.
+ * A transaction previously matched by a rule that no longer matches falls
+ * back to whatever (if anything) currently matches, which may mean it
+ * becomes uncategorised again.
+ */
+function reapplyRulesTo(candidates: TransactionRow[]): number {
   const rules = getRulesForMatching();
-  const uncategorised = transactionsRepo.listUncategorised();
-
   let updated = 0;
-  for (const txn of uncategorised) {
+  for (const txn of candidates) {
     const match = matchDescription(txn.normalizedDescription, rules);
-    if (match) {
-      transactionsRepo.setTransactionCategory(txn.id, match.categoryId, 'rule', match.matchedRuleId);
+    const categoryId = match?.categoryId ?? null;
+    const categorySource = match ? 'rule' : null;
+    const matchedRuleId = match?.matchedRuleId ?? null;
+    if (
+      txn.categoryId !== categoryId ||
+      txn.categorySource !== categorySource ||
+      txn.matchedRuleId !== matchedRuleId
+    ) {
+      transactionsRepo.setTransactionCategory(txn.id, categoryId, categorySource, matchedRuleId);
       updated += 1;
     }
   }
-  return { updated };
+  return updated;
+}
+
+/** Re-runs matching over every currently-Uncategorised transaction using the latest rule set. */
+export function recategoriseUncategorised(): { updated: number } {
+  return { updated: reapplyRulesTo(transactionsRepo.listUncategorised()) };
 }
