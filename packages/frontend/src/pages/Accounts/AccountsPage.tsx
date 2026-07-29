@@ -22,7 +22,9 @@ export function AccountsPage() {
     accountId: selectedAccountId as number,
   });
 
-  const currentBalance = trend && trend.length > 0 ? trend[trend.length - 1]?.balance ?? 0 : 0;
+  const latestPoint = trend && trend.length > 0 ? trend[trend.length - 1] : undefined;
+  const currentBalance = latestPoint?.balance ?? 0;
+  const balanceLabel = latestPoint?.confirmed ? 'Current balance' : 'Balance (since first transaction)';
 
   return (
     <div className="space-y-4">
@@ -55,7 +57,7 @@ export function AccountsPage() {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Balance (since first transaction)</div>
+            <div className="text-xs uppercase tracking-wide text-slate-500">{balanceLabel}</div>
             <div className={`mt-1 text-2xl font-semibold ${currentBalance >= 0 ? 'text-green-700' : 'text-red-600'}`}>
               {formatMoney(currentBalance)}
             </div>

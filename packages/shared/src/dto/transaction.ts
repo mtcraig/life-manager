@@ -11,6 +11,7 @@ export interface TransactionDto {
   categoryId: number | null; // null = Uncategorised
   categorySource: (typeof CATEGORY_SOURCES)[number] | null;
   matchedRuleId: number | null;
+  balanceAfter: number | null; // bank-reported balance after this transaction, when known
   importedAt: string;
 }
 

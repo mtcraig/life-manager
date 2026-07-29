@@ -30,6 +30,7 @@ export function AccountsSettings() {
   const [amountColumn, setAmountColumn] = useState('Amount');
   const [debitColumn, setDebitColumn] = useState('Debit');
   const [creditColumn, setCreditColumn] = useState('Credit');
+  const [balanceColumn, setBalanceColumn] = useState('');
   const [dateFormat, setDateFormat] = useState<(typeof DATE_FORMATS)[number]>('YYYY-MM-DD');
   const [formError, setFormError] = useState<string | null>(null);
   const [ingestMessage, setIngestMessage] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export function AccountsSettings() {
             ...(amountMode === 'signed'
               ? { amount: amountColumn }
               : { debit: debitColumn, credit: creditColumn }),
+            ...(balanceColumn ? { balance: balanceColumn } : {}),
           }
         : undefined;
 
@@ -218,6 +220,15 @@ export function AccountsSettings() {
                     </label>
                   </div>
                 )}
+                <label className="text-sm text-slate-700">
+                  Balance column header (optional)
+                  <input
+                    value={balanceColumn}
+                    onChange={(e) => setBalanceColumn(e.target.value)}
+                    placeholder="e.g. Balance"
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  />
+                </label>
               </div>
             </div>
           )}

@@ -1,0 +1,1 @@
+ALTER TABLE `transactions` ADD `balance_after` integer;

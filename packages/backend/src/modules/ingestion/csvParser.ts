@@ -10,6 +10,7 @@ export interface ParsedTransactionRow {
   description: string;
   normalizedDescription: string;
   externalId: string | null;
+  balanceAfter: number | null;
   rawCsvRow: Record<string, string>;
 }
 
@@ -40,6 +41,7 @@ export function parseAccountCsv(csvContent: string, mapping: ColumnMapping): Par
       description,
       normalizedDescription: normalizeDescription(description),
       externalId: mapping.externalId ? (row[mapping.externalId] ?? null) : null,
+      balanceAfter: mapping.balance ? parseOptionalBalance(row, mapping.balance) : null,
       rawCsvRow: row,
     };
   });
@@ -51,4 +53,15 @@ function requireColumn(row: Record<string, string>, column: string, label: strin
     throw new Error(`Missing expected "${label}" column ("${column}") in CSV row: ${JSON.stringify(row)}`);
   }
   return value;
+}
+
+/**
+ * Balance is supplementary, not essential like date/description/amount — a
+ * missing column or blank cell yields null rather than failing the row, but a
+ * present-and-garbled value still throws (same strictness as a garbled amount).
+ */
+function parseOptionalBalance(row: Record<string, string>, column: string): number | null {
+  const raw = row[column];
+  if (raw === undefined || raw.trim() === '') return null;
+  return parseMoneyToMinorUnits(raw);
 }

@@ -18,6 +18,8 @@ export const columnMappingSchema = z
     debit: z.string().min(1).optional(),
     credit: z.string().min(1).optional(),
     externalId: z.string().min(1).optional(),
+    // Running balance-after-transaction column, when the bank's export includes one.
+    balance: z.string().min(1).optional(),
     dateFormat: z.enum(DATE_FORMATS).default('YYYY-MM-DD'),
   })
   .refine((mapping) => Boolean(mapping.amount) || Boolean(mapping.debit && mapping.credit), {

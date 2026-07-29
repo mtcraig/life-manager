@@ -8,6 +8,13 @@
       "when": 1785339836324,
       "tag": "0000_red_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785350006333,
+      "tag": "0001_black_psynapse",
+      "breakpoints": true
     }
   ]
 }

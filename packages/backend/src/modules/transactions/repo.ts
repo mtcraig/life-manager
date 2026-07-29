@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import type { TransactionListQuery } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { transactions } from '../../db/schema/transactions';
@@ -14,6 +14,7 @@ export interface TransactionRow {
   categoryId: number | null;
   categorySource: string | null;
   matchedRuleId: number | null;
+  balanceAfter: number | null;
   dedupeHash: string;
   rawCsvRow: unknown;
   importedAt: number;
@@ -30,6 +31,7 @@ export interface NewTransactionFields {
   categoryId: number | null;
   categorySource: string | null;
   matchedRuleId: number | null;
+  balanceAfter: number | null;
 }
 
 function buildFilters(query: TransactionListQuery) {
@@ -111,13 +113,20 @@ export interface AnalyticsTransactionRow {
   date: string;
   amount: number;
   isTransfer: boolean;
+  balanceAfter: number | null;
 }
 
 /**
- * Flat (date, amount, isTransfer) rows for analytics aggregation — the money-flow
- * and balance-trend calculations both start from this, joining categories to get
- * is_transfer since that flag lives on the category, not the transaction itself.
- * Uncategorised transactions (categoryId null) surface as isTransfer: false.
+ * Flat (date, amount, isTransfer, balanceAfter) rows for analytics aggregation
+ * — the money-flow and balance-trend calculations both start from this,
+ * joining categories to get is_transfer since that flag lives on the
+ * category, not the transaction itself. Uncategorised transactions
+ * (categoryId null) surface as isTransfer: false.
+ *
+ * Ordered by (date, id) ascending — money-flow's per-date grouping doesn't
+ * care about order, but computeBalanceTrend's same-day tiebreak (which
+ * balanceAfter wins when multiple transactions share a date) does, so this
+ * ordering is load-bearing for that calculation.
  */
 export function listTransactionAmountsWithTransferFlag(params: {
   accountId?: number;
@@ -135,16 +144,19 @@ export function listTransactionAmountsWithTransferFlag(params: {
       date: transactions.date,
       amount: transactions.amount,
       isTransfer: categories.isTransfer,
+      balanceAfter: transactions.balanceAfter,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .where(where)
+    .orderBy(asc(transactions.date), asc(transactions.id))
     .all();
 
   return rows.map((row) => ({
     date: row.date,
     amount: row.amount,
     isTransfer: row.isTransfer ?? false,
+    balanceAfter: row.balanceAfter,
   }));
 }
 

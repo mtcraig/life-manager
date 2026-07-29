@@ -74,6 +74,7 @@ function ingestFile(
           categoryId: match?.categoryId ?? null,
           categorySource: match ? ('rule' as const) : null,
           matchedRuleId: match?.matchedRuleId ?? null,
+          balanceAfter: row.balanceAfter,
         };
       }),
     );

@@ -9,6 +9,9 @@ import type { ParsedTransactionRow } from './csvParser';
  * Otherwise we hash date+amount+description, plus an occurrence index —
  * genuinely identical transactions on the same day (e.g. two identical coffee
  * purchases) are distinguished by their position among duplicates within the file.
+ *
+ * `balanceAfter` is deliberately excluded from the hash — it's supplementary
+ * data about a transaction, not part of its identity.
  */
 export function computeDedupeHashes(rows: ParsedTransactionRow[]): string[] {
   const occurrenceCounts = new Map<string, number>();

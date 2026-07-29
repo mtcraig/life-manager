@@ -18,6 +18,9 @@ export const transactions = sqliteTable(
     categoryId: integer('category_id').references(() => categories.id),
     categorySource: text('category_source'),
     matchedRuleId: integer('matched_rule_id').references(() => categorisationRules.id),
+    // Bank-reported balance after this transaction, when the CSV's column mapping
+    // includes a balance column. Null for rows/accounts without one.
+    balanceAfter: integer('balance_after'),
     dedupeHash: text('dedupe_hash').notNull(),
     rawCsvRow: text('raw_csv_row', { mode: 'json' }),
     importedAt: integer('imported_at').notNull(),

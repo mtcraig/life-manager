@@ -25,7 +25,8 @@ export type MoneyFlowQuery = z.infer<typeof moneyFlowQuerySchema>;
 
 export interface BalanceTrendPointDto {
   date: string; // ISO YYYY-MM-DD
-  balance: number; // integer pence, cumulative sum of transaction amounts up to and including this date
+  balance: number; // integer pence — bank-reported where confirmed, otherwise a computed running total
+  confirmed: boolean; // true once a bank-reported balance has been seen on or before this date
 }
 
 export const accountBalanceTrendQuerySchema = z.object({
