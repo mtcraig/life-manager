@@ -8,8 +8,9 @@ import {
   useCreateCategorisationRule,
   useDeleteCategorisationRule,
   useRecategoriseUncategorised,
+  useUpdateCategorisationRule,
 } from '../../hooks/useCategorisationRules.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 const NEW_CATEGORY_VALUE = '__new__';
 
@@ -18,9 +19,46 @@ export function CategorisationRulesSettings() {
   const createCategory = useCreateCategory();
   const { data: rules, isPending, isError } = useCategorisationRules();
   const createRule = useCreateCategorisationRule();
+  const updateRule = useUpdateCategorisationRule();
   const deleteRule = useDeleteCategorisationRule();
   const bulkImport = useBulkImportCategorisationRules();
   const recategorise = useRecategoriseUncategorised();
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editPattern, setEditPattern] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editMatchType, setEditMatchType] = useState<CreateCategorisationRuleInput['matchType']>('fuzzy');
+  const [editPriority, setEditPriority] = useState(0);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function startEditing(rule: CategorisationRuleDto) {
+    setEditingId(rule.id);
+    setEditPattern(rule.pattern);
+    setEditCategoryId(String(rule.categoryId));
+    setEditMatchType(rule.matchType);
+    setEditPriority(rule.priority);
+    setEditError(null);
+  }
+
+  function handleEditSubmit(event: React.FormEvent, ruleId: number) {
+    event.preventDefault();
+    setEditError(null);
+    updateRule.mutate(
+      {
+        id: ruleId,
+        input: {
+          pattern: editPattern,
+          categoryId: Number(editCategoryId),
+          matchType: editMatchType,
+          priority: editPriority,
+        },
+      },
+      {
+        onSuccess: () => setEditingId(null),
+        onError: (error) => setEditError(error instanceof Error ? error.message : String(error)),
+      },
+    );
+  }
 
   const [pattern, setPattern] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -258,23 +296,91 @@ export function CategorisationRulesSettings() {
         {isPending && <p className="text-sm text-slate-500">Loading…</p>}
         {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load categorisation rules.</p>}
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-          {rules?.map((rule: CategorisationRuleDto) => (
-            <li key={rule.id} className="flex items-center justify-between py-2">
-              <div>
-                <span className="font-medium text-slate-900 dark:text-slate-100">{rule.pattern}</span>
-                <span className="ml-2 text-xs text-slate-500">
-                  → {categoryNameById.get(rule.categoryId) ?? rule.categoryId} · {rule.matchType} · priority{' '}
-                  {rule.priority} · {rule.source}
-                </span>
-              </div>
-              <button
-                onClick={() => deleteRule.mutate(rule.id)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                Delete
-              </button>
-            </li>
-          ))}
+          {rules?.map((rule: CategorisationRuleDto) =>
+            editingId === rule.id ? (
+              <li key={rule.id} className="py-2">
+                <form onSubmit={(e) => handleEditSubmit(e, rule.id)} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Pattern
+                      <input
+                        required
+                        value={editPattern}
+                        onChange={(e) => setEditPattern(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </label>
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Category
+                      <select
+                        value={editCategoryId}
+                        onChange={(e) => setEditCategoryId(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      >
+                        {categories?.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Match type
+                      <select
+                        value={editMatchType}
+                        onChange={(e) =>
+                          setEditMatchType(e.target.value as CreateCategorisationRuleInput['matchType'])
+                        }
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      >
+                        {MATCH_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Priority (higher wins ties)
+                      <input
+                        type="number"
+                        value={editPriority}
+                        onChange={(e) => setEditPriority(Number(e.target.value))}
+                        className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </label>
+                  </div>
+                  {editError && <p className="text-sm text-red-600 dark:text-red-400">{editError}</p>}
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={updateRule.isPending} className={BTN_PRIMARY}>
+                      {updateRule.isPending ? 'Saving…' : 'Save'}
+                    </button>
+                    <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </li>
+            ) : (
+              <li key={rule.id} className="flex items-center justify-between py-2">
+                <div>
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{rule.pattern}</span>
+                  <span className="ml-2 text-xs text-slate-500">
+                    → {categoryNameById.get(rule.categoryId) ?? rule.categoryId} · {rule.matchType} · priority{' '}
+                    {rule.priority} · {rule.source}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => startEditing(rule)} className={BTN_ROW_ACTION}>
+                    Edit
+                  </button>
+                  <button onClick={() => deleteRule.mutate(rule.id)} className={BTN_ROW_ACTION}>
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ),
+          )}
           {rules?.length === 0 && <li className="py-2 text-sm text-slate-500">No rules yet.</li>}
         </ul>
       </section>

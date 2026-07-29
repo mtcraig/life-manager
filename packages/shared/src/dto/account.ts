@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ACCOUNT_TYPES, INGESTION_MODES } from '../enums.js';
 
-export const DATE_FORMATS = ['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY'] as const;
+export const DATE_FORMATS = ['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY', 'DD MON YYYY'] as const;
 export type DateFormat = (typeof DATE_FORMATS)[number];
 
 /**

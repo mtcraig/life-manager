@@ -5,8 +5,9 @@
  */
 export function parseMoneyToMinorUnits(raw: string): number {
   const trimmed = raw.trim();
-  const isParenthesised = /^\(.*\)$/.test(trimmed);
-  const cleaned = trimmed
+  const dequoted = trimmed.replace(/^["']|["']$/g, '').trim();
+  const isParenthesised = /^\(.*\)$/.test(dequoted);
+  const cleaned = dequoted
     .replace(/^\(|\)$/g, '')
     .replace(/[£$€,]/g, '')
     .trim();

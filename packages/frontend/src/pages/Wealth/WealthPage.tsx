@@ -7,6 +7,7 @@ import {
   useCreateProperty,
   useProperties,
   usePropertyValuations,
+  useUpdateProperty,
 } from '../../hooks/useProperties.js';
 import {
   useArchiveLiability,
@@ -14,18 +15,29 @@ import {
   useCreateLiability,
   useLiabilities,
   useLiabilityValuations,
+  useUpdateLiability,
 } from '../../hooks/useLiabilities.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
-function SummaryTile({ label, value, tone }: { label: string; value: number; tone?: 'positive' | 'negative' }) {
+function SummaryTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: 'positive' | 'negative' | 'asset';
+}) {
   const color =
     tone === 'negative'
       ? 'text-red-600 dark:text-red-400'
       : tone === 'positive'
         ? 'text-green-700 dark:text-green-400'
-        : 'text-slate-900 dark:text-slate-100';
+        : tone === 'asset'
+          ? 'text-yellow-600 dark:text-yellow-400'
+          : 'text-slate-900 dark:text-slate-100';
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
@@ -38,12 +50,30 @@ function PropertiesSection() {
   const { data: properties, isPending, isError } = useProperties();
   const createProperty = useCreateProperty();
   const archiveProperty = useArchiveProperty();
+  const updateProperty = useUpdateProperty();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const { data: valuations, isPending: isValuationsPending } = usePropertyValuations(expandedId);
   const addValuation = useAddPropertyValuation(expandedId ?? -1);
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+
+  function startEditing(property: { id: number; name: string; address: string | null }) {
+    setEditingId(property.id);
+    setEditName(property.name);
+    setEditAddress(property.address ?? '');
+  }
+
+  function handleEditSubmit(event: React.FormEvent, propertyId: number) {
+    event.preventDefault();
+    updateProperty.mutate(
+      { id: propertyId, input: { name: editName, address: editAddress.trim() || undefined } },
+      { onSuccess: () => setEditingId(null) },
+    );
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -90,27 +120,55 @@ function PropertiesSection() {
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {properties?.map((property) => (
           <li key={property.id} className="py-3">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setExpandedId(expandedId === property.id ? null : property.id)}
-                className="text-left"
-              >
-                <span className="font-medium text-slate-900 dark:text-slate-100">{property.name}</span>
-                {property.address && <span className="ml-2 text-xs text-slate-500">{property.address}</span>}
-              </button>
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {property.currentValue !== null ? formatMoney(property.currentValue) : '—'}
-                </span>
-                <button
-                  onClick={() => archiveProperty.mutate(property.id)}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  Archive
+            {editingId === property.id ? (
+              <form onSubmit={(e) => handleEditSubmit(e, property.id)} className="flex flex-wrap items-end gap-3">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Name
+                  <input
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Address
+                  <input
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <button type="submit" disabled={updateProperty.isPending} className={BTN_PRIMARY}>
+                  {updateProperty.isPending ? 'Saving…' : 'Save'}
                 </button>
+                <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setExpandedId(expandedId === property.id ? null : property.id)}
+                  className="text-left"
+                >
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{property.name}</span>
+                  {property.address && <span className="ml-2 text-xs text-slate-500">{property.address}</span>}
+                </button>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {property.currentValue !== null ? formatMoney(property.currentValue) : '—'}
+                  </span>
+                  <button onClick={() => startEditing(property)} className={BTN_ROW_ACTION}>
+                    Edit
+                  </button>
+                  <button onClick={() => archiveProperty.mutate(property.id)} className={BTN_ROW_ACTION}>
+                    Archive
+                  </button>
+                </div>
               </div>
-            </div>
-            {expandedId === property.id && (
+            )}
+            {expandedId === property.id && editingId !== property.id && (
               <ValuationHistoryPanel
                 valuations={valuations}
                 isPending={isValuationsPending}
@@ -129,12 +187,30 @@ function LiabilitiesSection() {
   const { data: liabilities, isPending, isError } = useLiabilities();
   const createLiability = useCreateLiability();
   const archiveLiability = useArchiveLiability();
+  const updateLiability = useUpdateLiability();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKind, setEditKind] = useState('');
   const { data: valuations, isPending: isValuationsPending } = useLiabilityValuations(expandedId);
   const addValuation = useAddLiabilityValuation(expandedId ?? -1);
 
   const [name, setName] = useState('');
   const [kind, setKind] = useState('');
+
+  function startEditing(liability: { id: number; name: string; kind: string | null }) {
+    setEditingId(liability.id);
+    setEditName(liability.name);
+    setEditKind(liability.kind ?? '');
+  }
+
+  function handleEditSubmit(event: React.FormEvent, liabilityId: number) {
+    event.preventDefault();
+    updateLiability.mutate(
+      { id: liabilityId, input: { name: editName, kind: editKind.trim() || undefined } },
+      { onSuccess: () => setEditingId(null) },
+    );
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -182,27 +258,56 @@ function LiabilitiesSection() {
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {liabilities?.map((liability) => (
           <li key={liability.id} className="py-3">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setExpandedId(expandedId === liability.id ? null : liability.id)}
-                className="text-left"
-              >
-                <span className="font-medium text-slate-900 dark:text-slate-100">{liability.name}</span>
-                {liability.kind && <span className="ml-2 text-xs text-slate-500">{liability.kind}</span>}
-              </button>
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {liability.currentValue !== null ? formatMoney(liability.currentValue) : '—'}
-                </span>
-                <button
-                  onClick={() => archiveLiability.mutate(liability.id)}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  Archive
+            {editingId === liability.id ? (
+              <form onSubmit={(e) => handleEditSubmit(e, liability.id)} className="flex flex-wrap items-end gap-3">
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Name
+                  <input
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Kind
+                  <input
+                    value={editKind}
+                    onChange={(e) => setEditKind(e.target.value)}
+                    placeholder="e.g. mortgage, loan"
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <button type="submit" disabled={updateLiability.isPending} className={BTN_PRIMARY}>
+                  {updateLiability.isPending ? 'Saving…' : 'Save'}
                 </button>
+                <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setExpandedId(expandedId === liability.id ? null : liability.id)}
+                  className="text-left"
+                >
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{liability.name}</span>
+                  {liability.kind && <span className="ml-2 text-xs text-slate-500">{liability.kind}</span>}
+                </button>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {liability.currentValue !== null ? formatMoney(liability.currentValue) : '—'}
+                  </span>
+                  <button onClick={() => startEditing(liability)} className={BTN_ROW_ACTION}>
+                    Edit
+                  </button>
+                  <button onClick={() => archiveLiability.mutate(liability.id)} className={BTN_ROW_ACTION}>
+                    Archive
+                  </button>
+                </div>
               </div>
-            </div>
-            {expandedId === liability.id && (
+            )}
+            {expandedId === liability.id && editingId !== liability.id && (
               <ValuationHistoryPanel
                 valuations={valuations}
                 isPending={isValuationsPending}
@@ -227,18 +332,20 @@ export function WealthPage() {
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the wealth summary.</p>}
       {summary && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryTile label="Net wealth" value={summary.netWealth} tone={summary.netWealth >= 0 ? 'positive' : 'negative'} />
-            <SummaryTile label="Liquid assets" value={summary.liquidAssets.total} />
-            <SummaryTile label="Non-liquid assets" value={summary.nonLiquidAssets.total} />
+            <SummaryTile label="Liquid assets" value={summary.liquidAssets.total} tone="asset" />
+            <SummaryTile label="Non-liquid assets" value={summary.nonLiquidAssets.total} tone="asset" />
+            <SummaryTile label="Liabilities" value={summary.liabilitiesTotal} tone="negative" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryTile label="Accounts" value={summary.liquidAssets.accountsTotal} />
             <SummaryTile label="Investments" value={summary.liquidAssets.investmentsTotal} />
             <SummaryTile label="Properties" value={summary.nonLiquidAssets.propertiesTotal} />
             <SummaryTile label="Contents" value={summary.nonLiquidAssets.contentsTotal} />
-            <SummaryTile label="Liabilities" value={summary.liabilitiesTotal} tone="negative" />
           </div>
-        </>
+        </div>
       )}
 
       <PropertiesSection />

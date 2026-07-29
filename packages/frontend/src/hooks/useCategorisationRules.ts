@@ -19,7 +19,10 @@ export function useCreateCategorisationRule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateCategorisationRuleInput) => rulesApi.createCategorisationRule(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: RULES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: RULES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
   });
 }
 
@@ -28,7 +31,10 @@ export function useUpdateCategorisationRule() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: UpdateCategorisationRuleInput }) =>
       rulesApi.updateCategorisationRule(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: RULES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: RULES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
   });
 }
 

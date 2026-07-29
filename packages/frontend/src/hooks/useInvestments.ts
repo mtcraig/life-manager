@@ -16,7 +16,10 @@ export function useCreateInvestment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateInvestmentInput) => investmentsApi.createInvestment(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
   });
 }
 
@@ -25,7 +28,10 @@ export function useUpdateInvestment() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: Partial<CreateInvestmentInput> }) =>
       investmentsApi.updateInvestment(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
   });
 }
 
@@ -33,7 +39,10 @@ export function useArchiveInvestment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => investmentsApi.archiveInvestment(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
   });
 }
 
@@ -54,6 +63,7 @@ export function useAddInvestmentValuation(investmentId: number) {
       queryClient.invalidateQueries({ queryKey: valuationsKey(investmentId) });
       queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
       queryClient.invalidateQueries({ queryKey: ['wealth'] });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
     },
   });
 }
