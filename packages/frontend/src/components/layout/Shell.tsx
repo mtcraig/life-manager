@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle.js';
+import { ServerStatus } from './ServerStatus.js';
+import { ExitButton } from './ExitButton.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Home', end: true },
@@ -38,6 +40,8 @@ export function Shell() {
           ))}
         </ul>
         <ThemeToggle />
+        <ServerStatus />
+        <ExitButton />
       </nav>
       <main className="flex-1 p-8">
         <Outlet />
