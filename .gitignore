@@ -5,4 +5,5 @@ build/
 .env
 .env.local
 packages/backend/data/
+.run/
 .DS_Store

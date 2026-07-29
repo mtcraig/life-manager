@@ -48,16 +48,31 @@ if not exist "%DB_FILE%" (
 )
 
 echo.
-echo Starting backend and frontend in separate windows...
-start "Life Manager - Backend"  /D "%ROOT%\packages\backend"  cmd /k npm run dev
-start "Life Manager - Frontend" /D "%ROOT%\packages\frontend" cmd /k npm run dev
+echo Starting backend and frontend in separate minimized windows...
+set "RUNDIR=%ROOT%\.run"
+if not exist "%RUNDIR%" mkdir "%RUNDIR%"
+rem The Exit button (backend /api/system/shutdown) reads these PID files to
+rem know what to taskkill, so it can close the windows this script opens.
+set "LIFE_MANAGER_RUN_DIR=%RUNDIR%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\start-server.ps1" -WorkingDirectory "%ROOT%\packages\backend"  -PidFile "%RUNDIR%\backend.pid"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\scripts\start-server.ps1" -WorkingDirectory "%ROOT%\packages\frontend" -PidFile "%RUNDIR%\frontend.pid"
 
 echo.
 echo Backend:  http://127.0.0.1:4000
 echo Frontend: http://127.0.0.1:5173
 echo.
-echo Once both windows report they're ready, open http://127.0.0.1:5173 in your browser.
+echo Waiting for the frontend to be ready...
+powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(60); while ((Get-Date) -lt $deadline) { try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:5173' -UseBasicParsing -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } } catch {} Start-Sleep -Milliseconds 500 }; exit 1"
+if errorlevel 1 (
+    echo Frontend did not respond within 60 seconds - open http://127.0.0.1:5173 manually.
+) else (
+    start "" http://127.0.0.1:5173
+)
+
+echo.
+echo The backend and frontend are running minimized in the taskbar.
+echo Use the Exit button in the app sidebar to stop both servers - it closes their windows for you.
 echo Close this window any time - the two server windows will keep running.
-echo To stop everything, close the "Life Manager - Backend" and "Life Manager - Frontend" windows.
 echo.
 pause
