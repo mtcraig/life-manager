@@ -14,6 +14,7 @@ import {
   useCategorisationRules,
   useCreateCategorisationRule,
   useDeleteCategorisationRule,
+  useReapplyAllRules,
   useRecategoriseUncategorised,
   useUpdateCategorisationRule,
 } from '../../hooks/useCategorisationRules.js';
@@ -33,6 +34,7 @@ export function CategorisationRulesSettings() {
   const deleteRule = useDeleteCategorisationRule();
   const bulkImport = useBulkImportCategorisationRules();
   const recategorise = useRecategoriseUncategorised();
+  const reapplyAll = useReapplyAllRules();
   const queryClient = useQueryClient();
 
   const [recategoriseJobId, setRecategoriseJobId] = useState<number | null>(null);
@@ -258,6 +260,14 @@ export function CategorisationRulesSettings() {
     });
   }
 
+  function handleReapplyAll() {
+    setRecategoriseMessage(null);
+    reapplyAll.mutate(undefined, {
+      onSuccess: (result) => setRecategoriseJobId(result.jobId),
+      onError: (error) => setRecategoriseMessage(error instanceof Error ? error.message : String(error)),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
@@ -424,13 +434,23 @@ export function CategorisationRulesSettings() {
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Rules</h2>
-          <button
-            onClick={handleRecategorise}
-            disabled={recategorise.isPending || recategoriseJobId !== null}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            {recategorise.isPending ? 'Starting…' : 'Recategorise Uncategorised transactions'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRecategorise}
+              disabled={recategorise.isPending || recategoriseJobId !== null}
+              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              {recategorise.isPending ? 'Starting…' : 'Recategorise Uncategorised transactions'}
+            </button>
+            <button
+              onClick={handleReapplyAll}
+              disabled={reapplyAll.isPending || recategoriseJobId !== null}
+              title="Slower: re-evaluates every transaction still categorised by a rule, not just Uncategorised ones — use after editing a rule's pattern so it can pick up a lost or changed match."
+              className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              {reapplyAll.isPending ? 'Starting…' : 'Fully reapply all rules'}
+            </button>
+          </div>
         </div>
         {recategoriseJobId !== null && (
           <div className="mb-2">

@@ -41,3 +41,7 @@ export function bulkImportCategorisationRules(input: BulkImportRulesInput) {
 export function recategoriseUncategorised() {
   return apiFetch<RecategoriseResultDto>('/categorisation-rules/recategorise', { method: 'POST' });
 }
+
+export function reapplyAllRules() {
+  return apiFetch<RecategoriseResultDto>('/categorisation-rules/reapply-all', { method: 'POST' });
+}

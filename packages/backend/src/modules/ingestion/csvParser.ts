@@ -41,7 +41,7 @@ export function parseAccountCsv(
     const description = requireColumn(row, mapping.description, 'description');
 
     const rawAmount = mapping.amount
-      ? parseMoneyToMinorUnits(requireColumn(row, mapping.amount, 'amount'))
+      ? parseMoneyOrZero(requireColumn(row, mapping.amount, 'amount'))
       : parseMoneyOrZero(requireColumn(row, mapping.credit as string, 'credit')) -
         parseMoneyOrZero(requireColumn(row, mapping.debit as string, 'debit'));
     const amount = accountType === 'credit_card' ? -rawAmount : rawAmount;
@@ -67,10 +67,10 @@ function requireColumn(row: Record<string, string>, column: string, label: strin
 }
 
 /**
- * Separate debit/credit columns are normally populated on only one side per
- * row — a blank cell means "no amount on this side", i.e. 0, not a parse
- * failure. A present-but-garbled value still throws (same strictness as a
- * garbled single amount column).
+ * A blank amount cell (single signed column, or one side of a debit/credit
+ * pair) means "no amount here", i.e. 0, not a parse failure — some exports
+ * include non-transaction rows (balance snapshots, fee adjustments) with an
+ * empty amount. A present-but-garbled value still throws.
  */
 function parseMoneyOrZero(raw: string | undefined): number {
   if (raw === undefined || raw.trim() === '') return 0;

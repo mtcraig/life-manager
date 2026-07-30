@@ -148,7 +148,8 @@ vi.mock('../jobs/repo', () => ({
   getJobById: vi.fn((id: number) => jobsById.get(id)),
 }));
 
-const { createRule, updateRule, deleteRule, recategoriseUncategorised, bulkImportRules } = await import('./service');
+const { createRule, updateRule, deleteRule, recategoriseUncategorised, reapplyAllRules, bulkImportRules } =
+  await import('./service');
 
 /**
  * The recategorise job always yields the event loop once before doing any
@@ -238,12 +239,9 @@ describe('createRule / updateRule auto-apply to existing transactions', () => {
     expect(txn.categorySource).toBe('manual');
   });
 
-  it('re-evaluates rule-sourced transactions when a rule pattern is edited, including losing a match', async () => {
+  it("updateRule's fast auto-apply does not touch a transaction that's already categorised by a rule", async () => {
     const { rule } = createRule({ pattern: 'tesco', categoryId: 10, vendorId: 5, matchType: 'exact', priority: 0 });
     await flushJob();
-    transactionsById.set(1, makeTransaction({ id: 1, normalizedDescription: 'tesco store 123' }));
-    // Re-apply as if the transaction existed at creation time (createRule already ran once above
-    // with no matching transactions present yet, so seed the matched state explicitly here).
     transactionsById.set(
       1,
       makeTransaction({
@@ -255,12 +253,16 @@ describe('createRule / updateRule auto-apply to existing transactions', () => {
       }),
     );
 
+    // Editing the pattern so it no longer matches would, under the old
+    // always-reapply-everything behaviour, clear this transaction's category.
+    // The fast path deliberately leaves already-categorised transactions
+    // alone — see reapplyAllRules below for the broader re-evaluation.
     updateRule(rule.id, { pattern: 'sainsburys' });
     await flushJob();
 
     const txn = transactionsById.get(1)!;
-    expect(txn.categoryId).toBeNull();
-    expect(txn.categorySource).toBeNull();
+    expect(txn.categoryId).toBe(10);
+    expect(txn.categorySource).toBe('rule');
   });
 
   it('recategoriseUncategorised only targets transactions with no category', async () => {
@@ -317,7 +319,7 @@ describe('createRule / updateRule vendor auto-apply (mirrors category behaviour)
     expect(txn.vendorSource).toBe('manual');
   });
 
-  it('re-evaluates rule-sourced vendor when a rule pattern is edited, including losing a match', async () => {
+  it("updateRule's fast auto-apply does not touch a vendor that's already rule-sourced", async () => {
     const { rule } = createRule({ pattern: 'tesco', categoryId: 10, vendorId: 5, matchType: 'exact', priority: 0 });
     await flushJob();
     transactionsById.set(
@@ -337,6 +339,62 @@ describe('createRule / updateRule vendor auto-apply (mirrors category behaviour)
     await flushJob();
 
     const txn = transactionsById.get(1)!;
+    expect(txn.vendorId).toBe(5);
+    expect(txn.vendorSource).toBe('rule');
+  });
+
+  it("does not auto-apply a vendor via the fast path when the transaction already has a category (even a manually-set one) — that needs reapplyAllRules", async () => {
+    transactionsById.set(
+      1,
+      makeTransaction({
+        id: 1,
+        normalizedDescription: 'tesco store 123',
+        categoryId: 99,
+        categorySource: 'manual',
+      }),
+    );
+
+    createRule({ pattern: 'tesco', categoryId: 10, vendorId: 5, matchType: 'exact', priority: 0 });
+    await flushJob();
+
+    // Fast path only looks at Uncategorised transactions, so this one — already
+    // categorised, even manually — isn't touched at all, vendor included.
+    const txn = transactionsById.get(1)!;
+    expect(txn.categoryId).toBe(99);
+    expect(txn.categorySource).toBe('manual');
+    expect(txn.vendorId).toBeNull();
+    expect(txn.vendorSource).toBeNull();
+  });
+});
+
+describe('reapplyAllRules', () => {
+  it('re-evaluates a rule-sourced transaction when a pattern edit means it no longer matches, clearing category and vendor', async () => {
+    const { rule } = createRule({ pattern: 'tesco', categoryId: 10, vendorId: 5, matchType: 'exact', priority: 0 });
+    await flushJob();
+    transactionsById.set(
+      1,
+      makeTransaction({
+        id: 1,
+        normalizedDescription: 'tesco store 123',
+        categoryId: 10,
+        categorySource: 'rule',
+        matchedRuleId: rule.id,
+        vendorId: 5,
+        vendorSource: 'rule',
+      }),
+    );
+
+    updateRule(rule.id, { pattern: 'sainsburys' });
+    await flushJob();
+    // The fast path (asserted above) left it untouched — reapplyAllRules is the
+    // broader, explicitly user-triggered re-evaluation that actually catches this.
+    const { jobId } = reapplyAllRules();
+    await flushJob();
+
+    expect(jobResult(jobId).updated).toBe(1);
+    const txn = transactionsById.get(1)!;
+    expect(txn.categoryId).toBeNull();
+    expect(txn.categorySource).toBeNull();
     expect(txn.vendorId).toBeNull();
     expect(txn.vendorSource).toBeNull();
   });
@@ -351,10 +409,13 @@ describe('createRule / updateRule vendor auto-apply (mirrors category behaviour)
         categorySource: 'manual',
       }),
     );
-
     createRule({ pattern: 'tesco', categoryId: 10, vendorId: 5, matchType: 'exact', priority: 0 });
     await flushJob();
 
+    const { jobId } = reapplyAllRules();
+    await flushJob();
+
+    expect(jobResult(jobId).updated).toBe(1);
     const txn = transactionsById.get(1)!;
     expect(txn.categoryId).toBe(99);
     expect(txn.categorySource).toBe('manual');

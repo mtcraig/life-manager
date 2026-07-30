@@ -55,6 +55,14 @@ export function getRulesForMatching(): RuleForMatching[] {
   return repo.listRules().map(toRuleForMatching);
 }
 
+/**
+ * Only re-matches currently-Uncategorised transactions (not every rule-sourced
+ * one) — fast, since that candidate set is typically small, so day-to-day rule
+ * tweaking doesn't pay the cost of re-scanning the whole rule-sourced history
+ * every time. Editing a pattern so it stops matching something it used to
+ * catch won't retroactively un-categorise that transaction via this path;
+ * use `reapplyAllRules` for that broader, slower re-evaluation.
+ */
 export function createRule(input: CreateCategorisationRuleInput): CategorisationRuleMutationResultDto {
   if (!categoriesRepo.getCategoryById(input.categoryId)) {
     throw new HttpError(404, `Category ${input.categoryId} not found`);
@@ -70,10 +78,11 @@ export function createRule(input: CreateCategorisationRuleInput): Categorisation
     priority: input.priority,
     source: 'manual',
   });
-  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced());
+  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorised());
   return { rule: toDto(row), jobId };
 }
 
+/** Fast-path candidate set — see the comment on createRule. */
 export function updateRule(
   id: number,
   input: UpdateCategorisationRuleInput,
@@ -95,7 +104,7 @@ export function updateRule(
     ...(input.matchType !== undefined && { matchType: input.matchType }),
     ...(input.priority !== undefined && { priority: input.priority }),
   });
-  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced());
+  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorised());
   return { rule: toDto(row as NonNullable<typeof row>), jobId };
 }
 
@@ -182,6 +191,20 @@ export function bulkImportRules(input: BulkImportRulesInput): BulkImportRulesRes
 /** Re-runs matching over every currently-Uncategorised transaction using the latest rule set. */
 export function recategoriseUncategorised(): RecategoriseResultDto {
   return { jobId: startRecategoriseJob(transactionsRepo.listUncategorised()).jobId };
+}
+
+/**
+ * The broad, slow re-evaluation: every Uncategorised transaction *and* every
+ * still rule-sourced (category or vendor) one, so an edited pattern that no
+ * longer matches something it used to correctly clears that stale match, and
+ * a pattern that now matches something previously caught by a different rule
+ * takes over. This is what createRule/updateRule used to do automatically on
+ * every tweak — now a separate, explicitly user-triggered action, since
+ * paying its full cost (O(candidates × rules) against the whole rule-sourced
+ * history) on every single-rule edit was the actual source of the slowness.
+ */
+export function reapplyAllRules(): RecategoriseResultDto {
+  return { jobId: startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced()).jobId };
 }
 
 function startRecategoriseJob(candidates: TransactionRow[]): { jobId: number } {
