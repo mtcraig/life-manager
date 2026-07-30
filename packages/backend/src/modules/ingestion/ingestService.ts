@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ColumnMapping, IngestResultDto, IngestionEventSource } from '@life-manager/shared';
+import type {
+  ColumnMapping,
+  IngestResultDto,
+  IngestionEventSource,
+  IngestionEventStatus,
+} from '@life-manager/shared';
 import { db } from '../../db/client';
 import { ingestionEvents } from '../../db/schema/ingestion-events';
 import { HttpError } from '../../lib/httpError';
@@ -11,6 +16,16 @@ import { matchDescription } from '../categorisation-rules/fuzzyMatcher';
 import type { RuleForMatching } from '../categorisation-rules/fuzzyMatcher';
 import { parseAccountCsv } from './csvParser';
 import { computeDedupeHashes } from './dedupe';
+
+/**
+ * `warning` covers both "some new rows plus some duplicates skipped" and "the
+ * whole file was already-ingested duplicates" — the latter isn't a failure,
+ * but shouldn't look identical to a genuinely empty/clean file, so any
+ * skipped row at all is surfaced as a warning rather than silently as success.
+ */
+export function computeIngestStatus(rowsSkipped: number): IngestionEventStatus {
+  return rowsSkipped > 0 ? 'warning' : 'success';
+}
 
 /**
  * Scans an account's configured folder for CSV files and ingests each one.
@@ -74,16 +89,19 @@ function ingestFile(
           categoryId: match?.categoryId ?? null,
           categorySource: match ? ('rule' as const) : null,
           matchedRuleId: match?.matchedRuleId ?? null,
+          vendorId: match?.vendorId ?? null,
+          vendorSource: match?.vendorId != null ? ('rule' as const) : null,
           balanceAfter: row.balanceAfter,
         };
       }),
     );
 
+    const rowsSkipped = parsedRows.length - rowsIngested;
     const result: IngestResultDto = {
-      status: 'success',
+      status: computeIngestStatus(rowsSkipped),
       fileName,
       rowsIngested,
-      rowsSkipped: parsedRows.length - rowsIngested,
+      rowsSkipped,
       errorMessage: null,
     };
     logIngestionEvent(accountId, source, result, ranAt);
@@ -114,6 +132,7 @@ function logIngestionEvent(
       fileName: result.fileName,
       status: result.status,
       rowsIngested: result.rowsIngested,
+      rowsSkipped: result.rowsSkipped,
       errorMessage: result.errorMessage,
       ranAt,
     })

@@ -9,9 +9,11 @@ export interface InsurancePlanRow {
   coverageAmount: number;
   premiumAmount: number;
   premiumFrequency: string;
+  effectiveDate: string;
   renewalDate: string;
   provider: string | null;
   notes: string | null;
+  cancelledAt: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -22,6 +24,7 @@ export interface InsurancePlanWriteFields {
   coverageAmount: number;
   premiumAmount: number;
   premiumFrequency: string;
+  effectiveDate: string;
   renewalDate: string;
   provider: string | null;
   notes: string | null;
@@ -59,4 +62,13 @@ export function updateInsurancePlan(
 export function deleteInsurancePlan(id: number): boolean {
   const result = db.delete(insurancePlans).where(eq(insurancePlans.id, id)).run();
   return result.changes > 0;
+}
+
+export function cancelInsurancePlan(id: number): InsurancePlanRow | undefined {
+  return db
+    .update(insurancePlans)
+    .set({ cancelledAt: Date.now(), updatedAt: Date.now() })
+    .where(eq(insurancePlans.id, id))
+    .returning()
+    .get();
 }

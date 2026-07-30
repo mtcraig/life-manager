@@ -9,9 +9,12 @@ export interface InsurancePlanDto {
   coverageAmount: number;
   premiumAmount: number;
   premiumFrequency: (typeof PREMIUM_FREQUENCIES)[number];
+  effectiveDate: string;
   renewalDate: string;
   provider: string | null;
   notes: string | null;
+  /** Set automatically once past renewalDate (on next read), or manually via the cancel action. */
+  cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,6 +25,7 @@ export const createInsurancePlanSchema = z.object({
   coverageAmount: z.number().int(),
   premiumAmount: z.number().int(),
   premiumFrequency: z.enum(PREMIUM_FREQUENCIES),
+  effectiveDate: z.string(),
   renewalDate: z.string(),
   provider: z.string().min(1).optional(),
   notes: z.string().min(1).optional(),

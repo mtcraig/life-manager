@@ -6,6 +6,7 @@ import { accountRoutes } from './modules/accounts/routes';
 import { transactionRoutes } from './modules/transactions/routes';
 import { ingestionRoutes } from './modules/ingestion/routes';
 import { categoryRoutes } from './modules/categories/routes';
+import { vendorRoutes } from './modules/vendors/routes';
 import { categorisationRuleRoutes } from './modules/categorisation-rules/routes';
 import { analyticsRoutes } from './modules/analytics/routes';
 import { investmentRoutes } from './modules/investments/routes';
@@ -19,6 +20,7 @@ import { contentsRoutes } from './modules/contents/routes';
 import { energyRoutes } from './modules/energy/routes';
 import { databaseRoutes } from './modules/database/routes';
 import { systemRoutes } from './modules/system/routes';
+import { appSettingsRoutes } from './modules/app-settings/routes';
 
 export async function buildFastifyApp() {
   const app = Fastify({ logger: true });
@@ -31,6 +33,7 @@ export async function buildFastifyApp() {
   await app.register(transactionRoutes, { prefix: '/api' });
   await app.register(ingestionRoutes, { prefix: '/api' });
   await app.register(categoryRoutes, { prefix: '/api' });
+  await app.register(vendorRoutes, { prefix: '/api' });
   await app.register(categorisationRuleRoutes, { prefix: '/api' });
   await app.register(analyticsRoutes, { prefix: '/api' });
   await app.register(investmentRoutes, { prefix: '/api' });
@@ -44,6 +47,7 @@ export async function buildFastifyApp() {
   await app.register(energyRoutes, { prefix: '/api' });
   await app.register(databaseRoutes, { prefix: '/api' });
   await app.register(systemRoutes, { prefix: '/api' });
+  await app.register(appSettingsRoutes, { prefix: '/api' });
 
   return app;
 }

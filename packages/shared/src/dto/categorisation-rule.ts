@@ -5,6 +5,7 @@ export interface CategorisationRuleDto {
   id: number;
   pattern: string;
   categoryId: number;
+  vendorId: number;
   matchType: (typeof MATCH_TYPES)[number];
   priority: number;
   source: (typeof RULE_SOURCES)[number];
@@ -15,6 +16,7 @@ export interface CategorisationRuleDto {
 export const createCategorisationRuleSchema = z.object({
   pattern: z.string().min(1),
   categoryId: z.number().int().positive(),
+  vendorId: z.number().int().positive(),
   matchType: z.enum(MATCH_TYPES).default('fuzzy'),
   priority: z.number().int().default(0),
 });
@@ -33,6 +35,7 @@ export const bulkImportRulesSchema = z.object({
   columnMapping: z.object({
     pattern: z.string().min(1),
     category: z.string().min(1),
+    vendor: z.string().min(1),
     matchType: z.string().min(1).optional(),
   }),
 });
@@ -41,4 +44,5 @@ export type BulkImportRulesInput = z.infer<typeof bulkImportRulesSchema>;
 export interface BulkImportRulesResultDto {
   rulesCreated: number;
   categoriesCreated: number;
+  vendorsCreated: number;
 }

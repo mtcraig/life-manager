@@ -25,5 +25,5 @@ export type EnergyUnit = (typeof ENERGY_UNITS)[number];
 export const INGESTION_EVENT_SOURCES = ['manual', 'watch'] as const;
 export type IngestionEventSource = (typeof INGESTION_EVENT_SOURCES)[number];
 
-export const INGESTION_EVENT_STATUSES = ['success', 'error'] as const;
+export const INGESTION_EVENT_STATUSES = ['success', 'warning', 'error'] as const;
 export type IngestionEventStatus = (typeof INGESTION_EVENT_STATUSES)[number];

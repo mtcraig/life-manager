@@ -1,0 +1,1 @@
+ALTER TABLE `ingestion_events` ADD `rows_skipped` integer DEFAULT 0 NOT NULL;

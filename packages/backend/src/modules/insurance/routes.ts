@@ -33,4 +33,9 @@ export async function insuranceRoutes(app: FastifyInstance) {
     service.deleteInsurancePlan(id);
     reply.status(204);
   });
+
+  app.post('/insurance-plans/:id/cancel', async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    return service.cancelInsurancePlan(id);
+  });
 }

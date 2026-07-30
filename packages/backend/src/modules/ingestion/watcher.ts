@@ -66,7 +66,7 @@ function stopWatcher(accountId: number) {
  * archiving an account) take effect immediately without a server restart.
  */
 export function syncWatchers() {
-  const accounts = accountsRepo.listAccounts(false);
+  const accounts = accountsRepo.listAccounts();
   const shouldWatch = new Map(
     accounts
       .filter((account) => account.ingestionMode === 'watched' && account.folderPath)

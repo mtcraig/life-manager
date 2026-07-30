@@ -35,3 +35,11 @@ export function useDeleteInsurancePlan() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: INSURANCE_KEY }),
   });
 }
+
+export function useCancelInsurancePlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => insuranceApi.cancelInsurancePlan(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: INSURANCE_KEY }),
+  });
+}

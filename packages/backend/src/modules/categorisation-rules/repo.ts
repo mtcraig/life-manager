@@ -6,6 +6,7 @@ export interface CategorisationRuleRow {
   id: number;
   pattern: string;
   categoryId: number;
+  vendorId: number;
   matchType: string;
   priority: number;
   source: string;
@@ -16,6 +17,7 @@ export interface CategorisationRuleRow {
 export interface CategorisationRuleWriteFields {
   pattern: string;
   categoryId: number;
+  vendorId: number;
   matchType: string;
   priority: number;
   source: string;

@@ -1,13 +1,38 @@
 import { useState } from 'react';
-import type { CreateInsurancePlanInput, PremiumFrequency } from '@life-manager/shared';
+import type { CreateInsurancePlanInput, InsurancePlanDto, PremiumFrequency } from '@life-manager/shared';
 import { PREMIUM_FREQUENCIES } from '@life-manager/shared';
 import {
+  useCancelInsurancePlan,
   useCreateInsurancePlan,
   useDeleteInsurancePlan,
   useInsurancePlans,
 } from '../../hooks/useInsurance.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+
+type InsuranceStatus = 'cancelled' | 'upcoming' | 'active' | 'expired';
+
+function deriveInsuranceStatus(plan: InsurancePlanDto): InsuranceStatus {
+  if (plan.cancelledAt) return 'cancelled';
+  const today = new Date().toISOString().slice(0, 10);
+  if (plan.effectiveDate > today) return 'upcoming';
+  if (plan.renewalDate < today) return 'expired';
+  return 'active';
+}
+
+const STATUS_LABELS: Record<InsuranceStatus, string> = {
+  cancelled: 'Cancelled',
+  upcoming: 'Upcoming',
+  active: 'Active',
+  expired: 'Expired',
+};
+
+const STATUS_TONE_CLASSES: Record<InsuranceStatus, string> = {
+  cancelled: 'text-red-600 dark:text-red-400',
+  upcoming: 'text-slate-500 dark:text-slate-400',
+  active: 'text-green-700 dark:text-green-400',
+  expired: 'text-amber-600 dark:text-amber-400',
+};
 
 function AddInsurancePlanForm() {
   const createPlan = useCreateInsurancePlan();
@@ -16,6 +41,7 @@ function AddInsurancePlanForm() {
   const [coverageAmount, setCoverageAmount] = useState('');
   const [premiumAmount, setPremiumAmount] = useState('');
   const [premiumFrequency, setPremiumFrequency] = useState<PremiumFrequency>('monthly');
+  const [effectiveDate, setEffectiveDate] = useState('');
   const [renewalDate, setRenewalDate] = useState('');
   const [provider, setProvider] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +55,7 @@ function AddInsurancePlanForm() {
       coverageAmount: Math.round(Number(coverageAmount) * 100),
       premiumAmount: Math.round(Number(premiumAmount) * 100),
       premiumFrequency,
+      effectiveDate,
       renewalDate,
       provider: provider.trim() || undefined,
     };
@@ -39,6 +66,7 @@ function AddInsurancePlanForm() {
         setCoverageAmount('');
         setPremiumAmount('');
         setPremiumFrequency('monthly');
+        setEffectiveDate('');
         setRenewalDate('');
         setProvider('');
       },
@@ -112,6 +140,16 @@ function AddInsurancePlanForm() {
         </select>
       </label>
       <label className="text-sm text-slate-700 dark:text-slate-300">
+        Effective date
+        <input
+          required
+          type="date"
+          value={effectiveDate}
+          onChange={(e) => setEffectiveDate(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
         Renewal date
         <input
           required
@@ -134,6 +172,7 @@ function AddInsurancePlanForm() {
 function InsurancePlansList() {
   const { data: plans, isPending, isError } = useInsurancePlans();
   const deletePlan = useDeleteInsurancePlan();
+  const cancelPlan = useCancelInsurancePlan();
 
   if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load insurance plans.</p>;
@@ -143,26 +182,37 @@ function InsurancePlansList() {
 
   return (
     <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-      {plans.map((plan) => (
-        <li key={plan.id} className="flex items-center justify-between py-3">
-          <div>
-            <div className="font-medium text-slate-900 dark:text-slate-100">
-              {plan.name} <span className="text-xs text-slate-500">({plan.type})</span>
+      {plans.map((plan) => {
+        const status = deriveInsuranceStatus(plan);
+        return (
+          <li key={plan.id} className="flex items-center justify-between py-3">
+            <div>
+              <div className="font-medium text-slate-900 dark:text-slate-100">
+                {plan.name} <span className="text-xs text-slate-500">({plan.type})</span>{' '}
+                <span className={`text-xs font-medium ${STATUS_TONE_CLASSES[status]}`}>
+                  {STATUS_LABELS[status]}
+                </span>
+              </div>
+              <div className="text-xs text-slate-500">
+                Coverage {formatMoney(plan.coverageAmount)} · Premium {formatMoney(plan.premiumAmount)}/
+                {plan.premiumFrequency === 'monthly' ? 'mo' : 'yr'} · Effective {plan.effectiveDate} · Renews{' '}
+                {plan.renewalDate}
+                {plan.provider ? ` · ${plan.provider}` : ''}
+              </div>
             </div>
-            <div className="text-xs text-slate-500">
-              Coverage {formatMoney(plan.coverageAmount)} · Premium {formatMoney(plan.premiumAmount)}/
-              {plan.premiumFrequency === 'monthly' ? 'mo' : 'yr'} · Renews {plan.renewalDate}
-              {plan.provider ? ` · ${plan.provider}` : ''}
+            <div className="flex items-center gap-2">
+              {!plan.cancelledAt && (
+                <button onClick={() => cancelPlan.mutate(plan.id)} className={BTN_ROW_ACTION}>
+                  Cancel
+                </button>
+              )}
+              <button onClick={() => deletePlan.mutate(plan.id)} className={BTN_ROW_ACTION}>
+                Delete
+              </button>
             </div>
-          </div>
-          <button
-            onClick={() => deletePlan.mutate(plan.id)}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            Delete
-          </button>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { TransactionListQuery } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { transactions } from '../../db/schema/transactions';
@@ -14,6 +14,8 @@ export interface TransactionRow {
   categoryId: number | null;
   categorySource: string | null;
   matchedRuleId: number | null;
+  vendorId: number | null;
+  vendorSource: string | null;
   balanceAfter: number | null;
   dedupeHash: string;
   rawCsvRow: unknown;
@@ -31,6 +33,8 @@ export interface NewTransactionFields {
   categoryId: number | null;
   categorySource: string | null;
   matchedRuleId: number | null;
+  vendorId: number | null;
+  vendorSource: string | null;
   balanceAfter: number | null;
 }
 
@@ -96,15 +100,25 @@ export function listUncategorised(): TransactionRow[] {
 }
 
 /**
- * Transactions eligible for automatic re-matching when rules change: never
- * categorised, or last categorised by a rule (not a manual override, which
- * must never be silently overwritten by a rule change).
+ * Transactions eligible for automatic re-matching when rules change: either
+ * field (category or vendor) is never-set or last-set by a rule (not a
+ * manual override, which must never be silently overwritten by a rule
+ * change). The per-field overwrite decision itself is made independently in
+ * reapplyRulesTo — this only widens the candidate set to anything that could
+ * plausibly need a write to either field.
  */
 export function listUncategorisedOrRuleSourced(): TransactionRow[] {
   return db
     .select()
     .from(transactions)
-    .where(or(isNull(transactions.categoryId), eq(transactions.categorySource, 'rule')))
+    .where(
+      or(
+        isNull(transactions.categoryId),
+        eq(transactions.categorySource, 'rule'),
+        isNull(transactions.vendorId),
+        eq(transactions.vendorSource, 'rule'),
+      ),
+    )
     .all();
 }
 
@@ -120,6 +134,25 @@ export function setTransactionCategory(
     .where(eq(transactions.id, id))
     .returning()
     .get();
+}
+
+/** Clears the "which rule matched this" bookkeeping field when that rule is deleted, leaving the transaction's own categoryId/vendorId untouched. */
+export function clearMatchedRuleId(ruleId: number): void {
+  db.update(transactions).set({ matchedRuleId: null }).where(eq(transactions.matchedRuleId, ruleId)).run();
+}
+
+/** Used by reapplyRulesTo, which computes both fields together in one pass per transaction. */
+export function setTransactionCategoryAndVendor(
+  id: number,
+  fields: {
+    categoryId: number | null;
+    categorySource: string | null;
+    matchedRuleId: number | null;
+    vendorId: number | null;
+    vendorSource: string | null;
+  },
+): TransactionRow | undefined {
+  return db.update(transactions).set(fields).where(eq(transactions.id, id)).returning().get();
 }
 
 export interface AnalyticsTransactionRow {
@@ -171,6 +204,83 @@ export function listTransactionAmountsWithTransferFlag(params: {
     isTransfer: row.isTransfer ?? false,
     balanceAfter: row.balanceAfter,
   }));
+}
+
+export interface CategorisedTransactionAmountRow {
+  amount: number;
+  categoryId: number | null;
+  categoryName: string | null;
+}
+
+/**
+ * Flat (amount, categoryId, categoryName) rows for a given account/date
+ * range, with no grouping/filtering applied — grouping into a per-category
+ * spending summary is done by the pure groupCategorySummary function so it
+ * stays unit-testable without a database.
+ */
+export function listCategorisedTransactionAmounts(params: {
+  accountId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}): CategorisedTransactionAmountRow[] {
+  const conditions = [];
+  if (params.accountId !== undefined) conditions.push(eq(transactions.accountId, params.accountId));
+  if (params.dateFrom !== undefined) conditions.push(gte(transactions.date, params.dateFrom));
+  if (params.dateTo !== undefined) conditions.push(lte(transactions.date, params.dateTo));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return db
+    .select({
+      amount: transactions.amount,
+      categoryId: transactions.categoryId,
+      categoryName: categories.name,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(where)
+    .all();
+}
+
+export interface TopTransactionRow {
+  id: number;
+  date: string;
+  description: string;
+  amount: number;
+  categoryName: string | null;
+}
+
+/**
+ * The largest income (direction 'in') or expense (direction 'out') transactions
+ * in a date range, biggest first. Transfers are excluded, matching the
+ * money-in/out convention (a transfer isn't real income or spending).
+ */
+export function listTopTransactionsByAmount(params: {
+  accountId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  direction: 'in' | 'out';
+  limit: number;
+}): TopTransactionRow[] {
+  const conditions = [params.direction === 'in' ? gte(transactions.amount, 0) : lt(transactions.amount, 0)];
+  if (params.accountId !== undefined) conditions.push(eq(transactions.accountId, params.accountId));
+  if (params.dateFrom !== undefined) conditions.push(gte(transactions.date, params.dateFrom));
+  if (params.dateTo !== undefined) conditions.push(lte(transactions.date, params.dateTo));
+  conditions.push(or(isNull(categories.isTransfer), eq(categories.isTransfer, false))!);
+
+  return db
+    .select({
+      id: transactions.id,
+      date: transactions.date,
+      description: transactions.description,
+      amount: transactions.amount,
+      categoryName: categories.name,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(...conditions))
+    .orderBy(params.direction === 'in' ? desc(transactions.amount) : asc(transactions.amount))
+    .limit(params.limit)
+    .all();
 }
 
 /**

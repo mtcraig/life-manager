@@ -73,6 +73,7 @@ if errorlevel 1 (
 echo.
 echo The backend and frontend are running minimized in the taskbar.
 echo Use the Exit button in the app sidebar to stop both servers - it closes their windows for you.
-echo Close this window any time - the two server windows will keep running.
 echo.
-pause
+echo This window will close automatically in 5 seconds - the backend and frontend windows stay open.
+timeout /t 5 /nobreak >nul
+exit /b 0

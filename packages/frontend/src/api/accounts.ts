@@ -6,8 +6,8 @@ import type {
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
 
-export function fetchAccounts(includeArchived = false) {
-  return apiFetch<AccountDto[]>(`/accounts?includeArchived=${includeArchived}`);
+export function fetchAccounts() {
+  return apiFetch<AccountDto[]>('/accounts');
 }
 
 export function createAccount(input: CreateAccountInput) {
@@ -24,8 +24,8 @@ export function updateAccount(id: number, input: UpdateAccountInput) {
   });
 }
 
-export function archiveAccount(id: number) {
-  return apiFetch<AccountDto>(`/accounts/${id}/archive`, { method: 'POST' });
+export function deleteAccount(id: number) {
+  return apiFetch<void>(`/accounts/${id}`, { method: 'DELETE' });
 }
 
 export function ingestAccount(id: number) {

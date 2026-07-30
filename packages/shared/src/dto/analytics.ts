@@ -35,3 +35,37 @@ export const accountBalanceTrendQuerySchema = z.object({
   dateTo: z.string().optional(),
 });
 export type AccountBalanceTrendQuery = z.infer<typeof accountBalanceTrendQuerySchema>;
+
+export interface CategorySummaryRowDto {
+  categoryId: number | null;
+  categoryName: string;
+  total: number; // integer pence, positive (spending magnitude)
+}
+
+export const categorySummaryQuerySchema = z.object({
+  accountId: z.coerce.number().int().positive().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+});
+export type CategorySummaryQuery = z.infer<typeof categorySummaryQuerySchema>;
+
+export interface TopTransactionDto {
+  id: number;
+  date: string; // ISO YYYY-MM-DD
+  description: string;
+  amount: number; // integer pence
+  categoryName: string | null;
+}
+
+export interface TopTransactionsResultDto {
+  topIncome: TopTransactionDto[];
+  topExpenses: TopTransactionDto[];
+}
+
+export const topTransactionsQuerySchema = z.object({
+  accountId: z.coerce.number().int().positive().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(50).default(5),
+});
+export type TopTransactionsQuery = z.infer<typeof topTransactionsQuerySchema>;

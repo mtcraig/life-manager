@@ -8,6 +8,7 @@ export const ingestionEvents = sqliteTable('ingestion_events', {
   fileName: text('file_name').notNull(),
   status: text('status').notNull(),
   rowsIngested: integer('rows_ingested').notNull().default(0),
+  rowsSkipped: integer('rows_skipped').notNull().default(0),
   errorMessage: text('error_message'),
   ranAt: integer('ran_at').notNull(),
 });

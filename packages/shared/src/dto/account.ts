@@ -36,7 +36,6 @@ export interface AccountDto {
   ingestionMode: (typeof INGESTION_MODES)[number];
   folderPath: string | null;
   columnMapping: ColumnMapping | null;
-  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

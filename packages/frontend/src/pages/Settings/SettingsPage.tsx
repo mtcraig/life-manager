@@ -1,5 +1,6 @@
 import { AccountsSettings } from './AccountsSettings.js';
 import { CategorisationRulesSettings } from './CategorisationRulesSettings.js';
+import { GeneralSettings } from './GeneralSettings.js';
 import { IngestionHistorySettings } from './IngestionHistorySettings.js';
 import { DatabaseSettings } from './DatabaseSettings.js';
 
@@ -12,6 +13,9 @@ export function SettingsPage() {
           Manage accounts, categorisation rules, ingestion folders, projection assumptions, and
           database backup/reset here.
         </p>
+      </div>
+      <div>
+        <GeneralSettings />
       </div>
       <div>
         <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
