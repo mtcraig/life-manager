@@ -2,6 +2,7 @@ import type {
   CreateLiabilityInput,
   CreateValuationInput,
   LiabilityDto,
+  UpdateValuationInput,
   ValuationDto,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -28,6 +29,10 @@ export function archiveLiability(id: number) {
   return apiFetch<LiabilityDto>(`/liabilities/${id}/archive`, { method: 'POST' });
 }
 
+export function deleteLiability(id: number) {
+  return apiFetch<void>(`/liabilities/${id}`, { method: 'DELETE' });
+}
+
 export function fetchLiabilityValuations(liabilityId: number) {
   return apiFetch<ValuationDto[]>(`/liabilities/${liabilityId}/valuations`);
 }
@@ -37,4 +42,19 @@ export function addLiabilityValuation(liabilityId: number, input: CreateValuatio
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function updateLiabilityValuation(
+  liabilityId: number,
+  valuationId: number,
+  input: UpdateValuationInput,
+) {
+  return apiFetch<ValuationDto>(`/liabilities/${liabilityId}/valuations/${valuationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteLiabilityValuation(liabilityId: number, valuationId: number) {
+  return apiFetch<void>(`/liabilities/${liabilityId}/valuations/${valuationId}`, { method: 'DELETE' });
 }

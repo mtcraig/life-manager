@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ACCOUNT_TYPES, DATE_FORMATS, INGESTION_MODES } from '@life-manager/shared';
 import type {
   AccountDto,
@@ -14,6 +15,8 @@ import {
   useIngestAccount,
   useUpdateAccount,
 } from '../../hooks/useAccounts.js';
+import { useJob } from '../../hooks/useJobs.js';
+import { JobProgressBar } from '../../components/JobProgressBar.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
@@ -309,12 +312,32 @@ export function AccountsSettings() {
   const createAccount = useCreateAccount();
   const deleteAccount = useDeleteAccount();
   const ingestAccount = useIngestAccount();
+  const queryClient = useQueryClient();
 
   const [draft, setDraft] = useState<AccountFormDraft>(EMPTY_DRAFT);
   const [formError, setFormError] = useState<string | null>(null);
   const [ingestResults, setIngestResults] = useState<IngestResultDto[] | null>(null);
   const [ingestEmptyMessage, setIngestEmptyMessage] = useState<string | null>(null);
+  const [ingestJobId, setIngestJobId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const { data: ingestJob } = useJob(ingestJobId);
+
+  useEffect(() => {
+    if (!ingestJob || ingestJob.status === 'running') return;
+    if (ingestJob.status === 'completed') {
+      const results: IngestResultDto[] = JSON.parse(ingestJob.resultJson ?? '[]');
+      if (results.length === 0) {
+        setIngestEmptyMessage('No CSV files found in the configured folder.');
+      } else {
+        setIngestResults(results);
+      }
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    } else {
+      setIngestEmptyMessage(ingestJob.errorMessage ?? 'Ingestion failed.');
+    }
+    setIngestJobId(null);
+  }, [ingestJob, queryClient]);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -338,13 +361,7 @@ export function AccountsSettings() {
     setIngestResults(null);
     setIngestEmptyMessage(null);
     ingestAccount.mutate(accountId, {
-      onSuccess: (results) => {
-        if (results.length === 0) {
-          setIngestEmptyMessage('No CSV files found in the configured folder.');
-        } else {
-          setIngestResults(results);
-        }
-      },
+      onSuccess: (result) => setIngestJobId(result.jobId),
       onError: (error) =>
         setIngestEmptyMessage(error instanceof Error ? error.message : String(error)),
     });
@@ -367,6 +384,11 @@ export function AccountsSettings() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
+        {ingestJobId !== null && (
+          <div className="mb-2">
+            <JobProgressBar jobId={ingestJobId} />
+          </div>
+        )}
         {ingestEmptyMessage && (
           <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{ingestEmptyMessage}</p>
         )}
@@ -392,6 +414,11 @@ export function AccountsSettings() {
               <li key={account.id} className="flex items-center justify-between py-2">
                 <div>
                   <span className="font-medium text-slate-900 dark:text-slate-100">{account.name}</span>
+                  {account.institution && (
+                    <span className="ml-2 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                      {account.institution}
+                    </span>
+                  )}
                   <span className="ml-2 text-xs text-slate-500">
                     {humanizeEnumValue(account.type)} · {humanizeEnumValue(account.ingestionMode)}
                   </span>
@@ -406,7 +433,7 @@ export function AccountsSettings() {
                   {account.folderPath && (
                     <button
                       onClick={() => handleIngest(account.id)}
-                      disabled={ingestAccount.isPending}
+                      disabled={ingestAccount.isPending || ingestJobId !== null}
                       className={BTN_ROW_ACTION}
                     >
                       Ingest now

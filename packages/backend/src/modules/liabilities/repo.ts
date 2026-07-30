@@ -1,4 +1,4 @@
-import { desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { liabilities, liabilityValuations } from '../../db/schema/liabilities';
 
@@ -74,6 +74,16 @@ export function archiveLiability(id: number): LiabilityRow | undefined {
     .get();
 }
 
+/** Cascades: valuations have no onDelete cascade at the FK level, so they're
+ * deleted before the liability, all inside one transaction. */
+export function deleteLiability(id: number): boolean {
+  return db.transaction((tx) => {
+    tx.delete(liabilityValuations).where(eq(liabilityValuations.liabilityId, id)).run();
+    const result = tx.delete(liabilities).where(eq(liabilities.id, id)).run();
+    return result.changes > 0;
+  });
+}
+
 export function listValuations(liabilityId: number): ValuationRow[] {
   return db
     .select()
@@ -89,6 +99,35 @@ export function insertValuation(liabilityId: number, fields: ValuationWriteField
     .values({ ...fields, liabilityId, createdAt: Date.now() })
     .returning()
     .get();
+}
+
+export function getValuationById(liabilityId: number, valuationId: number): ValuationRow | undefined {
+  return db
+    .select()
+    .from(liabilityValuations)
+    .where(and(eq(liabilityValuations.id, valuationId), eq(liabilityValuations.liabilityId, liabilityId)))
+    .get();
+}
+
+export function updateValuation(
+  liabilityId: number,
+  valuationId: number,
+  fields: Partial<ValuationWriteFields>,
+): ValuationRow | undefined {
+  return db
+    .update(liabilityValuations)
+    .set(fields)
+    .where(and(eq(liabilityValuations.id, valuationId), eq(liabilityValuations.liabilityId, liabilityId)))
+    .returning()
+    .get();
+}
+
+export function deleteValuation(liabilityId: number, valuationId: number): boolean {
+  const result = db
+    .delete(liabilityValuations)
+    .where(and(eq(liabilityValuations.id, valuationId), eq(liabilityValuations.liabilityId, liabilityId)))
+    .run();
+  return result.changes > 0;
 }
 
 /**

@@ -4,8 +4,12 @@ import {
   useArchiveInvestment,
   useAddInvestmentValuation,
   useCreateInvestment,
+  useDeleteInvestment,
+  useDeleteInvestmentValuation,
   useInvestmentValuations,
   useInvestments,
+  useUpdateInvestment,
+  useUpdateInvestmentValuation,
 } from '../../hooks/useInvestments.js';
 import {
   useCreateProjectionScenario,
@@ -67,10 +71,50 @@ function AddInvestmentForm() {
 function InvestmentsList() {
   const { data: investments, isPending, isError } = useInvestments();
   const archiveInvestment = useArchiveInvestment();
+  const deleteInvestment = useDeleteInvestment();
+  const updateInvestment = useUpdateInvestment();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editKind, setEditKind] = useState('');
+  const [rowError, setRowError] = useState<string | null>(null);
 
   const { data: valuations, isPending: isValuationsPending } = useInvestmentValuations(expandedId);
   const addValuation = useAddInvestmentValuation(expandedId ?? -1);
+  const updateValuation = useUpdateInvestmentValuation(expandedId ?? -1);
+  const deleteValuation = useDeleteInvestmentValuation(expandedId ?? -1);
+
+  function startEditing(investment: { id: number; name: string; kind: string | null }) {
+    setEditingId(investment.id);
+    setEditName(investment.name);
+    setEditKind(investment.kind ?? '');
+  }
+
+  function handleEditSubmit(event: React.FormEvent, investmentId: number) {
+    event.preventDefault();
+    updateInvestment.mutate(
+      { id: investmentId, input: { name: editName, kind: editKind.trim() || undefined } },
+      { onSuccess: () => setEditingId(null) },
+    );
+  }
+
+  function handleArchive(investmentId: number) {
+    setRowError(null);
+    archiveInvestment.mutate(investmentId, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
+  }
+
+  function handleDelete(investment: { id: number; name: string }) {
+    const confirmed = window.confirm(
+      `Permanently delete "${investment.name}" and all its valuations? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setRowError(null);
+    deleteInvestment.mutate(investment.id, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
+  }
 
   if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load investments.</p>;
@@ -79,40 +123,82 @@ function InvestmentsList() {
   }
 
   return (
-    <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-      {investments.map((investment) => (
-        <li key={investment.id} className="py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setExpandedId(expandedId === investment.id ? null : investment.id)}
-              className="text-left"
-            >
-              <span className="font-medium text-slate-900 dark:text-slate-100">{investment.name}</span>
-              {investment.kind && <span className="ml-2 text-xs text-slate-500">{investment.kind}</span>}
-            </button>
-            <div className="flex items-center gap-3">
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                {investment.currentValue !== null ? formatMoney(investment.currentValue) : '—'}
-              </span>
-              <button
-                onClick={() => archiveInvestment.mutate(investment.id)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+    <>
+      {rowError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
+      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+        {investments.map((investment) =>
+          editingId === investment.id ? (
+            <li key={investment.id} className="py-3">
+              <form
+                onSubmit={(e) => handleEditSubmit(e, investment.id)}
+                className="flex flex-wrap items-end gap-3"
               >
-                Archive
-              </button>
-            </div>
-          </div>
-          {expandedId === investment.id && (
-            <ValuationHistoryPanel
-              valuations={valuations}
-              isPending={isValuationsPending}
-              onAddValuation={(input) => addValuation.mutate(input)}
-              isAdding={addValuation.isPending}
-            />
-          )}
-        </li>
-      ))}
-    </ul>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Name
+                  <input
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Kind
+                  <input
+                    value={editKind}
+                    onChange={(e) => setEditKind(e.target.value)}
+                    placeholder="e.g. pension, stocks"
+                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <button type="submit" disabled={updateInvestment.isPending} className={BTN_PRIMARY}>
+                  {updateInvestment.isPending ? 'Saving…' : 'Save'}
+                </button>
+                <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                  Cancel
+                </button>
+              </form>
+            </li>
+          ) : (
+            <li key={investment.id} className="py-3">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setExpandedId(expandedId === investment.id ? null : investment.id)}
+                  className="text-left"
+                >
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{investment.name}</span>
+                  {investment.kind && <span className="ml-2 text-xs text-slate-500">{investment.kind}</span>}
+                </button>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                    {investment.currentValue !== null ? formatMoney(investment.currentValue) : '—'}
+                  </span>
+                  <button onClick={() => startEditing(investment)} className={BTN_ROW_ACTION}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleArchive(investment.id)} className={BTN_ROW_ACTION}>
+                    Archive
+                  </button>
+                  <button onClick={() => handleDelete(investment)} className={BTN_ROW_ACTION}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+              {expandedId === investment.id && (
+                <ValuationHistoryPanel
+                  valuations={valuations}
+                  isPending={isValuationsPending}
+                  onAddValuation={(input) => addValuation.mutate(input)}
+                  isAdding={addValuation.isPending}
+                  onUpdateValuation={(valuationId, input) => updateValuation.mutate({ valuationId, input })}
+                  onDeleteValuation={(valuationId) => deleteValuation.mutate(valuationId)}
+                />
+              )}
+            </li>
+          ),
+        )}
+      </ul>
+    </>
   );
 }
 

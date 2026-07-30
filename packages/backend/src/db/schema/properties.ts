@@ -5,6 +5,10 @@ export const properties = sqliteTable('properties', {
   name: text('name').notNull(),
   address: text('address'),
   notes: text('notes'),
+  // Geocoded from `address` on create/update (see properties/geocode.ts) and cached here so the
+  // map doesn't re-geocode on every render. Null until geocoded, or if geocoding failed/no address.
+  lat: text('lat'),
+  lng: text('lng'),
   archivedAt: integer('archived_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),

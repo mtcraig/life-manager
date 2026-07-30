@@ -2,6 +2,7 @@ import type {
   CreateLiabilityInput,
   CreateValuationInput,
   LiabilityDto,
+  UpdateValuationInput,
   ValuationDto,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
@@ -78,6 +79,13 @@ export function archiveLiability(id: number): LiabilityDto {
   return toDto(row, latestValues.get(id) ?? null);
 }
 
+export function deleteLiability(id: number): void {
+  if (!repo.getLiabilityById(id)) {
+    throw new HttpError(404, `Liability ${id} not found`);
+  }
+  repo.deleteLiability(id);
+}
+
 export function listValuations(liabilityId: number): ValuationDto[] {
   if (!repo.getLiabilityById(liabilityId)) {
     throw new HttpError(404, `Liability ${liabilityId} not found`);
@@ -102,4 +110,34 @@ export function addValuation(liabilityId: number, input: CreateValuationInput): 
     }
     throw error;
   }
+}
+
+export function updateValuation(
+  liabilityId: number,
+  valuationId: number,
+  input: UpdateValuationInput,
+): ValuationDto {
+  if (!repo.getValuationById(liabilityId, valuationId)) {
+    throw new HttpError(404, `Valuation ${valuationId} not found for liability ${liabilityId}`);
+  }
+  try {
+    const row = repo.updateValuation(liabilityId, valuationId, {
+      ...(input.asOfDate !== undefined && { asOfDate: input.asOfDate }),
+      ...(input.value !== undefined && { value: input.value }),
+      ...(input.notes !== undefined && { notes: input.notes ?? null }),
+    });
+    return valuationToDto(row as NonNullable<typeof row>);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      throw new HttpError(409, `A valuation for ${input.asOfDate} already exists`);
+    }
+    throw error;
+  }
+}
+
+export function deleteValuation(liabilityId: number, valuationId: number): void {
+  if (!repo.getValuationById(liabilityId, valuationId)) {
+    throw new HttpError(404, `Valuation ${valuationId} not found for liability ${liabilityId}`);
+  }
+  repo.deleteValuation(liabilityId, valuationId);
 }

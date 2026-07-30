@@ -7,13 +7,26 @@ import * as liabilitiesRepo from '../liabilities/repo';
 import * as contentsRepo from '../contents/repo';
 import { computeWealthSummary, sumLatestValuations } from '../../lib/calculations/wealth';
 
+/**
+ * credit_card accounts are liabilities, not liquid assets — their transaction
+ * total (money owed) is pulled out of `accountsTotal` and folded into
+ * `liabilitiesTotal` instead. A card currently in credit (positive balance)
+ * contributes 0 here rather than a negative liability.
+ */
 export function getWealthSummary(): WealthSummaryDto {
-  const activeAccountIds = accountsRepo.listAccounts().map((a) => a.id);
+  const allAccounts = accountsRepo.listAccounts();
   const accountTotals = transactionsRepo.sumAmountsByAccount();
-  const accountsTotal = activeAccountIds.reduce(
-    (sum, id) => sum + (accountTotals.get(id) ?? 0),
-    0,
-  );
+
+  let accountsTotal = 0;
+  let creditCardLiabilityTotal = 0;
+  for (const account of allAccounts) {
+    const total = accountTotals.get(account.id) ?? 0;
+    if (account.type === 'credit_card') {
+      creditCardLiabilityTotal += Math.max(0, -total);
+    } else {
+      accountsTotal += total;
+    }
+  }
 
   const activeInvestmentIds = investmentsRepo.listInvestments(false).map((i) => i.id);
   const investmentsTotal = sumLatestValuations(
@@ -30,10 +43,9 @@ export function getWealthSummary(): WealthSummaryDto {
   const contentsTotal = contentsRepo.sumAllValues();
 
   const activeLiabilityIds = liabilitiesRepo.listLiabilities(false).map((l) => l.id);
-  const liabilitiesTotal = sumLatestValuations(
-    activeLiabilityIds,
-    liabilitiesRepo.listLatestValuationsForAll(),
-  );
+  const liabilitiesTotal =
+    sumLatestValuations(activeLiabilityIds, liabilitiesRepo.listLatestValuationsForAll()) +
+    creditCardLiabilityTotal;
 
   return computeWealthSummary({
     accountsTotal,

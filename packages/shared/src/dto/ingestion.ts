@@ -8,6 +8,13 @@ export interface IngestResultDto {
   errorMessage: string | null;
 }
 
+/** Ingestion runs as a background job (see JobDto) so the frontend can show
+ * progress instead of blocking on one long request; the completed job's
+ * `resultJson` is an `IngestResultDto[]`. */
+export interface IngestStartedDto {
+  jobId: number;
+}
+
 export interface IngestionEventDto {
   id: number;
   accountId: number | null;

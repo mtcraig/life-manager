@@ -1,7 +1,7 @@
 import type {
   AccountDto,
   CreateAccountInput,
-  IngestResultDto,
+  IngestStartedDto,
   UpdateAccountInput,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -29,5 +29,5 @@ export function deleteAccount(id: number) {
 }
 
 export function ingestAccount(id: number) {
-  return apiFetch<IngestResultDto[]>(`/accounts/${id}/ingest`, { method: 'POST' });
+  return apiFetch<IngestStartedDto>(`/accounts/${id}/ingest`, { method: 'POST' });
 }

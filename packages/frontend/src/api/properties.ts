@@ -2,6 +2,7 @@ import type {
   CreatePropertyInput,
   CreateValuationInput,
   PropertyDto,
+  UpdateValuationInput,
   ValuationDto,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -28,6 +29,10 @@ export function archiveProperty(id: number) {
   return apiFetch<PropertyDto>(`/properties/${id}/archive`, { method: 'POST' });
 }
 
+export function deleteProperty(id: number) {
+  return apiFetch<void>(`/properties/${id}`, { method: 'DELETE' });
+}
+
 export function fetchPropertyValuations(propertyId: number) {
   return apiFetch<ValuationDto[]>(`/properties/${propertyId}/valuations`);
 }
@@ -37,4 +42,19 @@ export function addPropertyValuation(propertyId: number, input: CreateValuationI
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function updatePropertyValuation(
+  propertyId: number,
+  valuationId: number,
+  input: UpdateValuationInput,
+) {
+  return apiFetch<ValuationDto>(`/properties/${propertyId}/valuations/${valuationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deletePropertyValuation(propertyId: number, valuationId: number) {
+  return apiFetch<void>(`/properties/${propertyId}/valuations/${valuationId}`, { method: 'DELETE' });
 }

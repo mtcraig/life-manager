@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateLiabilityInput, CreateValuationInput } from '@life-manager/shared';
+import type {
+  CreateLiabilityInput,
+  CreateValuationInput,
+  UpdateValuationInput,
+} from '@life-manager/shared';
 import * as liabilitiesApi from '../api/liabilities.js';
 
 const LIABILITIES_KEY = ['liabilities'] as const;
@@ -37,6 +41,17 @@ export function useArchiveLiability() {
   });
 }
 
+export function useDeleteLiability() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => liabilitiesApi.deleteLiability(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
 export function useLiabilityValuations(liabilityId: number | null) {
   return useQuery({
     queryKey: valuationsKey(liabilityId ?? -1),
@@ -50,6 +65,31 @@ export function useAddLiabilityValuation(liabilityId: number) {
   return useMutation({
     mutationFn: (input: CreateValuationInput) =>
       liabilitiesApi.addLiabilityValuation(liabilityId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(liabilityId) });
+      queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
+export function useUpdateLiabilityValuation(liabilityId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ valuationId, input }: { valuationId: number; input: UpdateValuationInput }) =>
+      liabilitiesApi.updateLiabilityValuation(liabilityId, valuationId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(liabilityId) });
+      queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
+export function useDeleteLiabilityValuation(liabilityId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (valuationId: number) => liabilitiesApi.deleteLiabilityValuation(liabilityId, valuationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: valuationsKey(liabilityId) });
       queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });

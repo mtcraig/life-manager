@@ -21,6 +21,7 @@ import { energyRoutes } from './modules/energy/routes';
 import { databaseRoutes } from './modules/database/routes';
 import { systemRoutes } from './modules/system/routes';
 import { appSettingsRoutes } from './modules/app-settings/routes';
+import { jobRoutes } from './modules/jobs/routes';
 
 export async function buildFastifyApp() {
   const app = Fastify({ logger: true });
@@ -48,6 +49,7 @@ export async function buildFastifyApp() {
   await app.register(databaseRoutes, { prefix: '/api' });
   await app.register(systemRoutes, { prefix: '/api' });
   await app.register(appSettingsRoutes, { prefix: '/api' });
+  await app.register(jobRoutes, { prefix: '/api' });
 
   return app;
 }

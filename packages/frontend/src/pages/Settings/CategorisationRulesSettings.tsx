@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { MATCH_TYPES } from '@life-manager/shared';
 import type { CategorisationRuleDto, CreateCategorisationRuleInput } from '@life-manager/shared';
 import { PagedListFooter } from '../../components/PagedListFooter.js';
+import { JobProgressBar } from '../../components/JobProgressBar.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { useCategories, useCreateCategory } from '../../hooks/useCategories.js';
 import { useCreateVendor, useVendors } from '../../hooks/useVendors.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
+import { useJob } from '../../hooks/useJobs.js';
 import {
   useBulkImportCategorisationRules,
   useCategorisationRules,
@@ -30,6 +33,10 @@ export function CategorisationRulesSettings() {
   const deleteRule = useDeleteCategorisationRule();
   const bulkImport = useBulkImportCategorisationRules();
   const recategorise = useRecategoriseUncategorised();
+  const queryClient = useQueryClient();
+
+  const [recategoriseJobId, setRecategoriseJobId] = useState<number | null>(null);
+  const { data: recategoriseJob } = useJob(recategoriseJobId);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editPattern, setEditPattern] = useState('');
@@ -109,7 +116,10 @@ export function CategorisationRulesSettings() {
         },
       },
       {
-        onSuccess: () => setEditingId(null),
+        onSuccess: (result) => {
+          setEditingId(null);
+          setRecategoriseJobId(result.jobId);
+        },
         onError: (error) => setEditError(error instanceof Error ? error.message : String(error)),
       },
     );
@@ -131,6 +141,18 @@ export function CategorisationRulesSettings() {
   const [matchTypeColumn, setMatchTypeColumn] = useState('');
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [recategoriseMessage, setRecategoriseMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!recategoriseJob || recategoriseJob.status === 'running') return;
+    if (recategoriseJob.status === 'completed') {
+      const { updated } = JSON.parse(recategoriseJob.resultJson ?? '{"updated":0}') as { updated: number };
+      setRecategoriseMessage(`Categorised ${updated} transaction(s).`);
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    } else {
+      setRecategoriseMessage(recategoriseJob.errorMessage ?? 'Recategorisation failed.');
+    }
+    setRecategoriseJobId(null);
+  }, [recategoriseJob, queryClient]);
 
   const categoryNameById = new Map(categories?.map((c) => [c.id, c.name]));
   const vendorNameById = new Map(vendors?.map((v) => [v.id, v.name]));
@@ -186,7 +208,7 @@ export function CategorisationRulesSettings() {
     createRule.mutate(
       { pattern, categoryId: resolvedCategoryId, vendorId: resolvedVendorId, matchType, priority },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           setPattern('');
           setCategoryId('');
           setNewCategoryName('');
@@ -194,6 +216,7 @@ export function CategorisationRulesSettings() {
           setNewVendorName('');
           setMatchType('fuzzy');
           setPriority(0);
+          setRecategoriseJobId(result.jobId);
         },
         onError: (error) => setFormError(error instanceof Error ? error.message : String(error)),
       },
@@ -220,6 +243,7 @@ export function CategorisationRulesSettings() {
               `and ${result.vendorsCreated} new vendor(s).`,
           );
           setCsvContent('');
+          if (result.jobId !== null) setRecategoriseJobId(result.jobId);
         },
         onError: (error) => setImportMessage(error instanceof Error ? error.message : String(error)),
       },
@@ -229,7 +253,7 @@ export function CategorisationRulesSettings() {
   function handleRecategorise() {
     setRecategoriseMessage(null);
     recategorise.mutate(undefined, {
-      onSuccess: (result) => setRecategoriseMessage(`Categorised ${result.updated} transaction(s).`),
+      onSuccess: (result) => setRecategoriseJobId(result.jobId),
       onError: (error) => setRecategoriseMessage(error instanceof Error ? error.message : String(error)),
     });
   }
@@ -258,12 +282,12 @@ export function CategorisationRulesSettings() {
                 className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="">Select a category</option>
+                <option value={NEW_CATEGORY_VALUE}>+ New category…</option>
                 {categories?.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-                <option value={NEW_CATEGORY_VALUE}>+ New category…</option>
               </select>
             </label>
             {categoryId === NEW_CATEGORY_VALUE && (
@@ -284,12 +308,12 @@ export function CategorisationRulesSettings() {
                 className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="">Select a vendor</option>
+                <option value={NEW_VENDOR_VALUE}>+ New vendor…</option>
                 {vendors?.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name}
                   </option>
                 ))}
-                <option value={NEW_VENDOR_VALUE}>+ New vendor…</option>
               </select>
             </label>
             {vendorId === NEW_VENDOR_VALUE && (
@@ -402,12 +426,17 @@ export function CategorisationRulesSettings() {
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Rules</h2>
           <button
             onClick={handleRecategorise}
-            disabled={recategorise.isPending}
+            disabled={recategorise.isPending || recategoriseJobId !== null}
             className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            {recategorise.isPending ? 'Recategorising…' : 'Recategorise Uncategorised transactions'}
+            {recategorise.isPending ? 'Starting…' : 'Recategorise Uncategorised transactions'}
           </button>
         </div>
+        {recategoriseJobId !== null && (
+          <div className="mb-2">
+            <JobProgressBar jobId={recategoriseJobId} />
+          </div>
+        )}
         {recategoriseMessage && (
           <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{recategoriseMessage}</p>
         )}
@@ -435,12 +464,12 @@ export function CategorisationRulesSettings() {
                         onChange={(e) => setEditCategoryId(e.target.value)}
                         className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       >
+                        <option value={NEW_CATEGORY_VALUE}>+ New category…</option>
                         {categories?.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}
                           </option>
                         ))}
-                        <option value={NEW_CATEGORY_VALUE}>+ New category…</option>
                       </select>
                     </label>
                     {editCategoryId === NEW_CATEGORY_VALUE && (
@@ -461,12 +490,12 @@ export function CategorisationRulesSettings() {
                         className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       >
                         <option value="">Select a vendor</option>
+                        <option value={NEW_VENDOR_VALUE}>+ New vendor…</option>
                         {vendors?.map((v) => (
                           <option key={v.id} value={v.id}>
                             {v.name}
                           </option>
                         ))}
-                        <option value={NEW_VENDOR_VALUE}>+ New vendor…</option>
                       </select>
                     </label>
                     {editVendorId === NEW_VENDOR_VALUE && (

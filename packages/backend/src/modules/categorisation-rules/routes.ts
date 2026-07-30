@@ -16,9 +16,9 @@ export async function categorisationRuleRoutes(app: FastifyInstance) {
 
   app.post('/categorisation-rules', async (request, reply) => {
     const input = createCategorisationRuleSchema.parse(request.body);
-    const rule = service.createRule(input);
+    const result = service.createRule(input);
     reply.status(201);
-    return rule;
+    return result;
   });
 
   app.patch('/categorisation-rules/:id', async (request) => {
