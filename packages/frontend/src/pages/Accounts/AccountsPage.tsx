@@ -3,11 +3,13 @@ import { useQueries } from '@tanstack/react-query';
 import { BalanceTrendChart } from '../../components/charts/BalanceTrendChart.js';
 import { CategorySpendingChart } from '../../components/charts/CategorySpendingChart.js';
 import { useAccounts } from '../../hooks/useAccounts.js';
-import { useAccountBalanceTrend, useCategorySummary } from '../../hooks/useAnalytics.js';
+import { useAccountBalanceTrend, useCategorySummaryByMonth } from '../../hooks/useAnalytics.js';
 import { fetchAccountBalanceTrend } from '../../api/analytics.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 
 const YEAR_FILTER_WINDOW = 4;
+
+type YearFilter = number | 'all';
 
 function toIsoDate(date: Date): string {
   const year = date.getFullYear();
@@ -16,7 +18,15 @@ function toIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function YearSelect({ selectedYear, onChange }: { selectedYear: number; onChange: (year: number) => void }) {
+/** dateTo caps at today for the current year rather than Dec 31, matching the rest of the app's YTD convention. */
+function dateRangeForYear(selectedYear: YearFilter): { dateFrom?: string; dateTo?: string } {
+  if (selectedYear === 'all') return {};
+  const currentYear = new Date().getFullYear();
+  const dateTo = selectedYear === currentYear ? toIsoDate(new Date()) : `${selectedYear}-12-31`;
+  return { dateFrom: `${selectedYear}-01-01`, dateTo };
+}
+
+function YearSelect({ selectedYear, onChange }: { selectedYear: YearFilter; onChange: (year: YearFilter) => void }) {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: YEAR_FILTER_WINDOW }, (_, i) => currentYear - i);
   return (
@@ -24,9 +34,10 @@ function YearSelect({ selectedYear, onChange }: { selectedYear: number; onChange
       Year{' '}
       <select
         value={selectedYear}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
         className="ml-1 rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
       >
+        <option value="all">All time</option>
         {yearOptions.map((y) => (
           <option key={y} value={y}>
             {y}
@@ -42,30 +53,31 @@ function CategorySpendingSection({
   selectedYear,
 }: {
   accountId: number | undefined;
-  selectedYear: number;
+  selectedYear: YearFilter;
 }) {
-  const currentYear = new Date().getFullYear();
-  const dateTo = selectedYear === currentYear ? toIsoDate(new Date()) : `${selectedYear}-12-31`;
-  const { data: rows, isPending, isError } = useCategorySummary({
+  const { data: rows, isPending, isError } = useCategorySummaryByMonth({
     accountId,
-    dateFrom: `${selectedYear}-01-01`,
-    dateTo,
+    ...dateRangeForYear(selectedYear),
   });
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
       <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-        Spending by category ({selectedYear})
+        Spending by category ({selectedYear === 'all' ? 'all time' : selectedYear})
       </h2>
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load category spending.</p>}
-      {rows && rows.length === 0 && <p className="text-sm text-slate-500">No spending in {selectedYear}.</p>}
+      {rows && rows.length === 0 && (
+        <p className="text-sm text-slate-500">
+          No spending {selectedYear === 'all' ? 'yet' : `in ${selectedYear}`}.
+        </p>
+      )}
       {rows && rows.length > 0 && <CategorySpendingChart rows={rows} />}
     </div>
   );
 }
 
-function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number; name: string }[]; selectedYear: number }) {
+function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number; name: string }[]; selectedYear: YearFilter }) {
   const balanceQueries = useQueries({
     queries: accounts.map((account) => ({
       queryKey: ['analytics', 'account-balance-trend', { accountId: account.id }],
@@ -121,7 +133,7 @@ function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number
   );
 }
 
-function AccountDetail({ accountId, selectedYear }: { accountId: number; selectedYear: number }) {
+function AccountDetail({ accountId, selectedYear }: { accountId: number; selectedYear: YearFilter }) {
   const {
     data: trend,
     isPending: isTrendPending,
@@ -131,6 +143,14 @@ function AccountDetail({ accountId, selectedYear }: { accountId: number; selecte
   const latestPoint = trend && trend.length > 0 ? trend[trend.length - 1] : undefined;
   const currentBalance = latestPoint?.balance ?? 0;
   const balanceLabel = latestPoint?.confirmed ? 'Current balance' : 'Balance (since first transaction)';
+
+  // The chart is scoped to the selected year, but each point's balance is still the true
+  // cumulative running total (computed from full history) — slicing the already-computed
+  // series keeps every value correct without needing a separate "opening balance" anchor.
+  const { dateFrom, dateTo } = dateRangeForYear(selectedYear);
+  const chartTrend = trend?.filter(
+    (point) => (dateFrom === undefined || point.date >= dateFrom) && (dateTo === undefined || point.date <= dateTo),
+  );
 
   return (
     <>
@@ -151,7 +171,12 @@ function AccountDetail({ accountId, selectedYear }: { accountId: number; selecte
         {trend && trend.length === 0 && (
           <p className="text-sm text-slate-500">No transactions ingested for this account yet.</p>
         )}
-        {trend && trend.length > 0 && <BalanceTrendChart points={trend} />}
+        {trend && trend.length > 0 && chartTrend && chartTrend.length === 0 && (
+          <p className="text-sm text-slate-500">
+            {selectedYear === 'all' ? 'No transactions.' : `No transactions in ${selectedYear}.`}
+          </p>
+        )}
+        {chartTrend && chartTrend.length > 0 && <BalanceTrendChart points={chartTrend} />}
       </div>
 
       <CategorySpendingSection accountId={accountId} selectedYear={selectedYear} />
@@ -163,7 +188,7 @@ export function AccountsPage() {
   const { data: accounts, isPending, isError } = useAccounts();
   const [viewMode, setViewMode] = useState<'all' | 'account'>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(undefined);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<YearFilter>(new Date().getFullYear());
 
   return (
     <div className="space-y-4">

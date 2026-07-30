@@ -1,6 +1,7 @@
 import type {
   AccountBalanceTrendQuery,
   BalanceTrendPointDto,
+  CategoryMonthSummaryRowDto,
   CategorySummaryQuery,
   CategorySummaryRowDto,
   MoneyFlowQuery,
@@ -10,6 +11,7 @@ import type {
 } from '@life-manager/shared';
 import { computeBalanceTrend } from '../../lib/calculations/balanceTrend';
 import { groupCategorySummary } from '../../lib/calculations/categorySummary';
+import { groupCategorySummaryByMonth } from '../../lib/calculations/categorySummaryByMonth';
 import { groupMoneyFlowByDate } from '../../lib/calculations/moneyFlow';
 import * as transactionsRepo from '../transactions/repo';
 
@@ -36,6 +38,11 @@ export function getAccountBalanceTrend(query: AccountBalanceTrendQuery): Balance
 export function getCategorySummary(query: CategorySummaryQuery): CategorySummaryRowDto[] {
   const rows = transactionsRepo.listCategorisedTransactionAmounts(query);
   return groupCategorySummary(rows);
+}
+
+export function getCategorySummaryByMonth(query: CategorySummaryQuery): CategoryMonthSummaryRowDto[] {
+  const rows = transactionsRepo.listCategorisedTransactionAmounts(query);
+  return groupCategorySummaryByMonth(rows);
 }
 
 export function getTopTransactions(query: TopTransactionsQuery): TopTransactionsResultDto {

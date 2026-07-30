@@ -8,6 +8,7 @@ import type {
 import {
   fetchAccountBalanceTrend,
   fetchCategorySummary,
+  fetchCategorySummaryByMonth,
   fetchMoneyFlow,
   fetchTopTransactions,
 } from '../api/analytics.js';
@@ -31,6 +32,13 @@ export function useCategorySummary(query: Partial<CategorySummaryQuery>) {
   return useQuery({
     queryKey: ['analytics', 'category-summary', query],
     queryFn: () => fetchCategorySummary(query),
+  });
+}
+
+export function useCategorySummaryByMonth(query: Partial<CategorySummaryQuery>) {
+  return useQuery({
+    queryKey: ['analytics', 'category-summary-by-month', query],
+    queryFn: () => fetchCategorySummaryByMonth(query),
   });
 }
 

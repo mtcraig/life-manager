@@ -8,6 +8,7 @@ import {
   useInsurancePlans,
 } from '../../hooks/useInsurance.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 type InsuranceStatus = 'cancelled' | 'upcoming' | 'active' | 'expired';
@@ -134,7 +135,7 @@ function AddInsurancePlanForm() {
         >
           {PREMIUM_FREQUENCIES.map((frequency) => (
             <option key={frequency} value={frequency}>
-              {frequency}
+              {humanizeEnumValue(frequency)}
             </option>
           ))}
         </select>

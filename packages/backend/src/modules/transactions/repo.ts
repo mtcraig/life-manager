@@ -207,6 +207,7 @@ export function listTransactionAmountsWithTransferFlag(params: {
 }
 
 export interface CategorisedTransactionAmountRow {
+  date: string;
   amount: number;
   categoryId: number | null;
   categoryName: string | null;
@@ -231,6 +232,7 @@ export function listCategorisedTransactionAmounts(params: {
 
   return db
     .select({
+      date: transactions.date,
       amount: transactions.amount,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
