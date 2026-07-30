@@ -9,6 +9,7 @@ export interface IngestionEventRow {
   fileName: string;
   status: string;
   rowsIngested: number;
+  rowsSkipped: number;
   errorMessage: string | null;
   ranAt: number;
 }

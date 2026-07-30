@@ -10,7 +10,6 @@ export const accounts = sqliteTable('accounts', {
   // ingestion mode, or watched continuously for 'watched' mode — same folder either way.
   folderPath: text('folder_path'),
   columnMapping: text('column_mapping', { mode: 'json' }).$type<Record<string, string>>(),
-  archivedAt: integer('archived_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

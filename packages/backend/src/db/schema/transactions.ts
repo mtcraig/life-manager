@@ -2,6 +2,7 @@ import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core
 import { accounts } from './accounts';
 import { categories } from './categories';
 import { categorisationRules } from './categorisation-rules';
+import { vendors } from './vendors';
 
 export const transactions = sqliteTable(
   'transactions',
@@ -18,6 +19,8 @@ export const transactions = sqliteTable(
     categoryId: integer('category_id').references(() => categories.id),
     categorySource: text('category_source'),
     matchedRuleId: integer('matched_rule_id').references(() => categorisationRules.id),
+    vendorId: integer('vendor_id').references(() => vendors.id),
+    vendorSource: text('vendor_source'),
     // Bank-reported balance after this transaction, when the CSV's column mapping
     // includes a balance column. Null for rows/accounts without one.
     balanceAfter: integer('balance_after'),

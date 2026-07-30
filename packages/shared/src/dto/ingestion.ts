@@ -15,6 +15,7 @@ export interface IngestionEventDto {
   fileName: string;
   status: (typeof INGESTION_EVENT_STATUSES)[number];
   rowsIngested: number;
+  rowsSkipped: number;
   errorMessage: string | null;
   ranAt: string;
 }

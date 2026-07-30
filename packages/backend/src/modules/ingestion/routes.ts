@@ -15,6 +15,7 @@ function toDto(row: IngestionEventRow): IngestionEventDto {
     fileName: row.fileName,
     status: row.status as IngestionEventDto['status'],
     rowsIngested: row.rowsIngested,
+    rowsSkipped: row.rowsSkipped,
     errorMessage: row.errorMessage,
     ranAt: new Date(row.ranAt).toISOString(),
   };

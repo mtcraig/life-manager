@@ -19,6 +19,8 @@ function toDto(row: TransactionRow): TransactionDto {
     categoryId: row.categoryId,
     categorySource: row.categorySource as TransactionDto['categorySource'],
     matchedRuleId: row.matchedRuleId,
+    vendorId: row.vendorId,
+    vendorSource: row.vendorSource as TransactionDto['vendorSource'],
     balanceAfter: row.balanceAfter,
     importedAt: new Date(row.importedAt).toISOString(),
   };

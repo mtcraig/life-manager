@@ -26,3 +26,7 @@ export function updateInsurancePlan(id: number, input: UpdateInsurancePlanInput)
 export function deleteInsurancePlan(id: number) {
   return apiFetch<void>(`/insurance-plans/${id}`, { method: 'DELETE' });
 }
+
+export function cancelInsurancePlan(id: number) {
+  return apiFetch<InsurancePlanDto>(`/insurance-plans/${id}/cancel`, { method: 'POST' });
+}

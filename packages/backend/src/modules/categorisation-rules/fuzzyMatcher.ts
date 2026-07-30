@@ -5,11 +5,13 @@ export interface RuleForMatching {
   id: number;
   pattern: string;
   categoryId: number;
+  vendorId: number;
   matchType: MatchType;
 }
 
 export interface MatchResult {
   categoryId: number;
+  vendorId: number;
   matchedRuleId: number;
 }
 
@@ -56,7 +58,7 @@ export function matchDescription(
     normalizedDescription.includes(rule.pattern.toLowerCase()),
   );
   if (exactMatch) {
-    return { categoryId: exactMatch.categoryId, matchedRuleId: exactMatch.id };
+    return { categoryId: exactMatch.categoryId, vendorId: exactMatch.vendorId, matchedRuleId: exactMatch.id };
   }
 
   const fuzzyRules = rules.filter((rule) => rule.matchType === 'fuzzy');
@@ -81,5 +83,7 @@ export function matchDescription(
     }
   }
 
-  return best ? { categoryId: best.rule.categoryId, matchedRuleId: best.rule.id } : null;
+  return best
+    ? { categoryId: best.rule.categoryId, vendorId: best.rule.vendorId, matchedRuleId: best.rule.id }
+    : null;
 }

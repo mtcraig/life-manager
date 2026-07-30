@@ -1,5 +1,6 @@
 export * from './accounts';
 export * from './categories';
+export * from './vendors';
 export * from './categorisation-rules';
 export * from './transactions';
 export * from './investments';
@@ -11,3 +12,4 @@ export * from './areas';
 export * from './contents-items';
 export * from './energy-readings';
 export * from './ingestion-events';
+export * from './app-settings';

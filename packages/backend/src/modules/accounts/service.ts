@@ -13,14 +13,13 @@ function toDto(row: AccountRow): AccountDto {
     ingestionMode: row.ingestionMode as AccountDto['ingestionMode'],
     folderPath: row.folderPath,
     columnMapping: row.columnMapping as AccountDto['columnMapping'],
-    archivedAt: row.archivedAt ? new Date(row.archivedAt).toISOString() : null,
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
   };
 }
 
-export function listAccounts(includeArchived: boolean): AccountDto[] {
-  return repo.listAccounts(includeArchived).map(toDto);
+export function listAccounts(): AccountDto[] {
+  return repo.listAccounts().map(toDto);
 }
 
 export function getAccount(id: number): AccountDto {
@@ -68,11 +67,10 @@ export function updateAccount(id: number, input: UpdateAccountInput): AccountDto
   return toDto(row as NonNullable<typeof row>);
 }
 
-export function archiveAccount(id: number): AccountDto {
-  const row = repo.archiveAccount(id);
-  if (!row) {
+export function deleteAccount(id: number): void {
+  if (!repo.getAccountById(id)) {
     throw new HttpError(404, `Account ${id} not found`);
   }
+  repo.deleteAccount(id);
   syncWatchers();
-  return toDto(row);
 }

@@ -1,7 +1,9 @@
-import { eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { ColumnMapping } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { accounts } from '../../db/schema/accounts';
+import { transactions } from '../../db/schema/transactions';
+import { ingestionEvents } from '../../db/schema/ingestion-events';
 
 export interface AccountRow {
   id: number;
@@ -11,7 +13,6 @@ export interface AccountRow {
   ingestionMode: string;
   folderPath: string | null;
   columnMapping: Record<string, string> | null;
-  archivedAt: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -25,11 +26,8 @@ export interface AccountWriteFields {
   columnMapping: ColumnMapping | null;
 }
 
-export function listAccounts(includeArchived: boolean): AccountRow[] {
-  if (includeArchived) {
-    return db.select().from(accounts).all();
-  }
-  return db.select().from(accounts).where(isNull(accounts.archivedAt)).all();
+export function listAccounts(): AccountRow[] {
+  return db.select().from(accounts).all();
 }
 
 export function getAccountById(id: number): AccountRow | undefined {
@@ -54,11 +52,14 @@ export function updateAccount(id: number, fields: Partial<AccountWriteFields>): 
     .get();
 }
 
-export function archiveAccount(id: number): AccountRow | undefined {
-  return db
-    .update(accounts)
-    .set({ archivedAt: Date.now(), updatedAt: Date.now() })
-    .where(eq(accounts.id, id))
-    .returning()
-    .get();
+/** Cascades: an account's transactions and ingestion history have no onDelete
+ * cascade at the FK level, so children are deleted before the parent, all
+ * inside one transaction. */
+export function deleteAccount(id: number): boolean {
+  return db.transaction((tx) => {
+    tx.delete(transactions).where(eq(transactions.accountId, id)).run();
+    tx.delete(ingestionEvents).where(eq(ingestionEvents.accountId, id)).run();
+    const result = tx.delete(accounts).where(eq(accounts.id, id)).run();
+    return result.changes > 0;
+  });
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useAccounts } from '../../hooks/useAccounts.js';
 import { useCategories } from '../../hooks/useCategories.js';
+import { useVendors } from '../../hooks/useVendors.js';
 import { useTransactions, useUpdateTransactionCategory } from '../../hooks/useTransactions.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 
 export function DetailPage() {
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
+  const { data: vendors } = useVendors();
   const updateCategory = useUpdateTransactionCategory();
   const [accountId, setAccountId] = useState<string>('');
   const [dateFrom, setDateFrom] = useState('');
@@ -24,6 +26,7 @@ export function DetailPage() {
   });
 
   const accountNameById = new Map(accounts?.map((a) => [a.id, a.name]));
+  const vendorNameById = new Map(vendors?.map((v) => [v.id, v.name]));
 
   return (
     <div className="space-y-4">
@@ -97,6 +100,7 @@ export function DetailPage() {
                   <th className="px-4 py-2">Account</th>
                   <th className="px-4 py-2">Description</th>
                   <th className="px-4 py-2">Category</th>
+                  <th className="px-4 py-2">Vendor</th>
                   <th className="px-4 py-2 text-right">Amount</th>
                 </tr>
               </thead>
@@ -131,6 +135,9 @@ export function DetailPage() {
                         ))}
                       </select>
                     </td>
+                    <td className="px-4 py-2 text-slate-500 dark:text-slate-400">
+                      {tx.vendorId !== null ? vendorNameById.get(tx.vendorId) ?? '—' : '—'}
+                    </td>
                     <td
                       className={`px-4 py-2 text-right ${
                         tx.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'
@@ -142,7 +149,7 @@ export function DetailPage() {
                 ))}
                 {data.items.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
                       No transactions match these filters.
                     </td>
                   </tr>

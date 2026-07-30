@@ -8,7 +8,7 @@ import * as contentsRepo from '../contents/repo';
 import { computeWealthSummary, sumLatestValuations } from '../../lib/calculations/wealth';
 
 export function getWealthSummary(): WealthSummaryDto {
-  const activeAccountIds = accountsRepo.listAccounts(false).map((a) => a.id);
+  const activeAccountIds = accountsRepo.listAccounts().map((a) => a.id);
   const accountTotals = transactionsRepo.sumAmountsByAccount();
   const accountsTotal = activeAccountIds.reduce(
     (sum, id) => sum + (accountTotals.get(id) ?? 0),

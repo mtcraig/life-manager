@@ -1,6 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AccountBalanceTrendQuery, MoneyFlowQuery } from '@life-manager/shared';
-import { fetchAccountBalanceTrend, fetchMoneyFlow } from '../api/analytics.js';
+import type {
+  AccountBalanceTrendQuery,
+  CategorySummaryQuery,
+  MoneyFlowQuery,
+  TopTransactionsQuery,
+} from '@life-manager/shared';
+import {
+  fetchAccountBalanceTrend,
+  fetchCategorySummary,
+  fetchMoneyFlow,
+  fetchTopTransactions,
+} from '../api/analytics.js';
 
 export function useMoneyFlow(query: Partial<MoneyFlowQuery>) {
   return useQuery({
@@ -14,5 +24,19 @@ export function useAccountBalanceTrend(query: AccountBalanceTrendQuery) {
     queryKey: ['analytics', 'account-balance-trend', query],
     queryFn: () => fetchAccountBalanceTrend(query),
     enabled: query.accountId !== undefined,
+  });
+}
+
+export function useCategorySummary(query: Partial<CategorySummaryQuery>) {
+  return useQuery({
+    queryKey: ['analytics', 'category-summary', query],
+    queryFn: () => fetchCategorySummary(query),
+  });
+}
+
+export function useTopTransactions(query: Partial<TopTransactionsQuery>) {
+  return useQuery({
+    queryKey: ['analytics', 'top-transactions', query],
+    queryFn: () => fetchTopTransactions(query),
   });
 }

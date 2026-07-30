@@ -53,6 +53,7 @@ export function useBulkImportCategorisationRules() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: RULES_KEY });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
     },
   });
 }

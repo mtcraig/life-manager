@@ -52,13 +52,12 @@ export function CalendarHeatmap({ days, daysToShow = 365, year }: CalendarHeatma
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const currentYear = today.getFullYear();
 
   let rangeStart: Date;
   let rangeEnd: Date;
   if (year !== undefined) {
     rangeStart = new Date(year, 0, 1);
-    rangeEnd = year === currentYear ? today : new Date(year, 11, 31);
+    rangeEnd = new Date(year, 11, 31);
   } else {
     rangeEnd = today;
     rangeStart = new Date(today);
@@ -95,18 +94,20 @@ export function CalendarHeatmap({ days, daysToShow = 365, year }: CalendarHeatma
     return firstDate.getMonth() !== previousMonth ? MONTH_LABELS[firstDate.getMonth()] : null;
   });
 
+  const columnTemplate = { gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))` };
+
   return (
-    <div className="overflow-x-auto">
-      <div className="inline-flex gap-1">
+    <div className="w-full">
+      <div className="grid gap-0.5" style={columnTemplate}>
         {monthLabels.map((label, i) => (
-          <div key={weeks[i]?.[0]} className="w-3 text-[10px] leading-none text-slate-400">
+          <div key={weeks[i]?.[0]} className="text-[10px] leading-none text-slate-400">
             {label}
           </div>
         ))}
       </div>
-      <div className="mt-1 inline-flex gap-1">
+      <div className="mt-1 grid gap-0.5" style={columnTemplate}>
         {weeks.map((week) => (
-          <div key={week[0]} className="flex flex-col gap-1">
+          <div key={week[0]} className="grid grid-rows-7 gap-0.5">
             {week.map((date) => {
               const value = valueByDate.get(date);
               const parsedDate = parseIsoDate(date);
@@ -115,7 +116,7 @@ export function CalendarHeatmap({ days, daysToShow = 365, year }: CalendarHeatma
                 <div
                   key={date}
                   title={isOutOfRange ? undefined : `${date}: ${formatMoney(value ?? 0)}`}
-                  className={`h-3 w-3 rounded-sm ${isOutOfRange ? 'invisible' : colorForValue(value ?? 0, maxAbs)}`}
+                  className={`aspect-square w-full rounded-sm ${isOutOfRange ? 'invisible' : colorForValue(value ?? 0, maxAbs)}`}
                 />
               );
             })}

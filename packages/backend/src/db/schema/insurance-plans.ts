@@ -7,9 +7,11 @@ export const insurancePlans = sqliteTable('insurance_plans', {
   coverageAmount: integer('coverage_amount').notNull(),
   premiumAmount: integer('premium_amount').notNull(),
   premiumFrequency: text('premium_frequency').notNull(),
+  effectiveDate: text('effective_date').notNull(),
   renewalDate: text('renewal_date').notNull(),
   provider: text('provider'),
   notes: text('notes'),
+  cancelledAt: integer('cancelled_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

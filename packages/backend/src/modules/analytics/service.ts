@@ -1,10 +1,15 @@
 import type {
   AccountBalanceTrendQuery,
   BalanceTrendPointDto,
+  CategorySummaryQuery,
+  CategorySummaryRowDto,
   MoneyFlowQuery,
   MoneyFlowResultDto,
+  TopTransactionsQuery,
+  TopTransactionsResultDto,
 } from '@life-manager/shared';
 import { computeBalanceTrend } from '../../lib/calculations/balanceTrend';
+import { groupCategorySummary } from '../../lib/calculations/categorySummary';
 import { groupMoneyFlowByDate } from '../../lib/calculations/moneyFlow';
 import * as transactionsRepo from '../transactions/repo';
 
@@ -26,4 +31,17 @@ export function getMoneyFlow(query: MoneyFlowQuery): MoneyFlowResultDto {
 export function getAccountBalanceTrend(query: AccountBalanceTrendQuery): BalanceTrendPointDto[] {
   const rows = transactionsRepo.listTransactionAmountsWithTransferFlag(query);
   return computeBalanceTrend(rows);
+}
+
+export function getCategorySummary(query: CategorySummaryQuery): CategorySummaryRowDto[] {
+  const rows = transactionsRepo.listCategorisedTransactionAmounts(query);
+  return groupCategorySummary(rows);
+}
+
+export function getTopTransactions(query: TopTransactionsQuery): TopTransactionsResultDto {
+  const base = { accountId: query.accountId, dateFrom: query.dateFrom, dateTo: query.dateTo, limit: query.limit };
+  return {
+    topIncome: transactionsRepo.listTopTransactionsByAmount({ ...base, direction: 'in' }),
+    topExpenses: transactionsRepo.listTopTransactionsByAmount({ ...base, direction: 'out' }),
+  };
 }

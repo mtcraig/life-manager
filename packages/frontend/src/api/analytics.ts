@@ -1,8 +1,12 @@
 import type {
   AccountBalanceTrendQuery,
   BalanceTrendPointDto,
+  CategorySummaryQuery,
+  CategorySummaryRowDto,
   MoneyFlowQuery,
   MoneyFlowResultDto,
+  TopTransactionsQuery,
+  TopTransactionsResultDto,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
 
@@ -20,4 +24,12 @@ export function fetchMoneyFlow(query: Partial<MoneyFlowQuery>) {
 
 export function fetchAccountBalanceTrend(query: AccountBalanceTrendQuery) {
   return apiFetch<BalanceTrendPointDto[]>(`/analytics/account-balance-trend?${toParams(query)}`);
+}
+
+export function fetchCategorySummary(query: Partial<CategorySummaryQuery>) {
+  return apiFetch<CategorySummaryRowDto[]>(`/analytics/category-summary?${toParams(query)}`);
+}
+
+export function fetchTopTransactions(query: Partial<TopTransactionsQuery>) {
+  return apiFetch<TopTransactionsResultDto>(`/analytics/top-transactions?${toParams(query)}`);
 }

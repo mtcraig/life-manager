@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { ACCOUNT_TYPES, DATE_FORMATS, INGESTION_MODES } from '@life-manager/shared';
-import type { AccountDto, ColumnMapping, CreateAccountInput, DateFormat } from '@life-manager/shared';
+import type {
+  AccountDto,
+  ColumnMapping,
+  CreateAccountInput,
+  DateFormat,
+  IngestResultDto,
+} from '@life-manager/shared';
 import {
   useAccounts,
-  useArchiveAccount,
   useCreateAccount,
+  useDeleteAccount,
   useIngestAccount,
   useUpdateAccount,
 } from '../../hooks/useAccounts.js';
+import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 interface AccountFormDraft {
@@ -112,7 +119,7 @@ function AccountFormFields({
           >
             {ACCOUNT_TYPES.map((type) => (
               <option key={type} value={type}>
-                {type}
+                {humanizeEnumValue(type)}
               </option>
             ))}
           </select>
@@ -250,6 +257,18 @@ function AccountFormFields({
   );
 }
 
+const INGEST_STATUS_TONE_CLASSES: Record<IngestResultDto['status'], string> = {
+  success: 'text-green-700 dark:text-green-400',
+  warning: 'text-amber-600 dark:text-amber-400',
+  error: 'text-red-600 dark:text-red-400',
+};
+
+function ingestResultMessage(result: IngestResultDto): string {
+  if (result.status === 'error') return result.errorMessage ?? 'Failed';
+  if (result.status === 'warning') return `${result.rowsIngested} ingested, ${result.rowsSkipped} skipped`;
+  return `${result.rowsIngested} ingested`;
+}
+
 function AccountEditRow({ account, onDone }: { account: AccountDto; onDone: () => void }) {
   const updateAccount = useUpdateAccount();
   const [draft, setDraft] = useState<AccountFormDraft>(() => draftFromAccount(account));
@@ -286,14 +305,15 @@ function AccountEditRow({ account, onDone }: { account: AccountDto; onDone: () =
 }
 
 export function AccountsSettings() {
-  const { data: accounts, isPending, isError } = useAccounts(true);
+  const { data: accounts, isPending, isError } = useAccounts();
   const createAccount = useCreateAccount();
-  const archiveAccount = useArchiveAccount();
+  const deleteAccount = useDeleteAccount();
   const ingestAccount = useIngestAccount();
 
   const [draft, setDraft] = useState<AccountFormDraft>(EMPTY_DRAFT);
   const [formError, setFormError] = useState<string | null>(null);
-  const [ingestMessage, setIngestMessage] = useState<string | null>(null);
+  const [ingestResults, setIngestResults] = useState<IngestResultDto[] | null>(null);
+  const [ingestEmptyMessage, setIngestEmptyMessage] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   function handleSubmit(event: React.FormEvent) {
@@ -306,16 +326,27 @@ export function AccountsSettings() {
     });
   }
 
+  function handleDelete(account: AccountDto) {
+    const confirmed = window.confirm(
+      `Permanently delete "${account.name}" and ALL its transactions and ingestion history? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    deleteAccount.mutate(account.id);
+  }
+
   function handleIngest(accountId: number) {
-    setIngestMessage(null);
+    setIngestResults(null);
+    setIngestEmptyMessage(null);
     ingestAccount.mutate(accountId, {
       onSuccess: (results) => {
-        const summary = results
-          .map((r) => `${r.fileName}: ${r.status === 'success' ? `${r.rowsIngested} ingested, ${r.rowsSkipped} skipped` : r.errorMessage}`)
-          .join('; ');
-        setIngestMessage(summary || 'No CSV files found in the configured folder.');
+        if (results.length === 0) {
+          setIngestEmptyMessage('No CSV files found in the configured folder.');
+        } else {
+          setIngestResults(results);
+        }
       },
-      onError: (error) => setIngestMessage(error instanceof Error ? error.message : String(error)),
+      onError: (error) =>
+        setIngestEmptyMessage(error instanceof Error ? error.message : String(error)),
     });
   }
 
@@ -336,7 +367,21 @@ export function AccountsSettings() {
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
-        {ingestMessage && <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{ingestMessage}</p>}
+        {ingestEmptyMessage && (
+          <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{ingestEmptyMessage}</p>
+        )}
+        {ingestResults && (
+          <ul className="mb-2 space-y-0.5">
+            {ingestResults.map((result, index) => (
+              <li key={`${result.fileName}-${index}`} className="text-sm">
+                <span className="text-slate-600 dark:text-slate-400">{result.fileName}: </span>
+                <span className={`font-medium ${INGEST_STATUS_TONE_CLASSES[result.status]}`}>
+                  {ingestResultMessage(result)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         {isPending && <p className="text-sm text-slate-500">Loading…</p>}
         {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load accounts.</p>}
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -348,20 +393,17 @@ export function AccountsSettings() {
                 <div>
                   <span className="font-medium text-slate-900 dark:text-slate-100">{account.name}</span>
                   <span className="ml-2 text-xs text-slate-500">
-                    {account.type} · {account.ingestionMode}
-                    {account.archivedAt ? ' · archived' : ''}
+                    {humanizeEnumValue(account.type)} · {account.ingestionMode}
                   </span>
                   {account.folderPath && (
                     <div className="text-xs text-slate-400">{account.folderPath}</div>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  {!account.archivedAt && (
-                    <button onClick={() => setEditingId(account.id)} className={BTN_ROW_ACTION}>
-                      Edit
-                    </button>
-                  )}
-                  {account.folderPath && !account.archivedAt && (
+                  <button onClick={() => setEditingId(account.id)} className={BTN_ROW_ACTION}>
+                    Edit
+                  </button>
+                  {account.folderPath && (
                     <button
                       onClick={() => handleIngest(account.id)}
                       disabled={ingestAccount.isPending}
@@ -370,11 +412,9 @@ export function AccountsSettings() {
                       Ingest now
                     </button>
                   )}
-                  {!account.archivedAt && (
-                    <button onClick={() => archiveAccount.mutate(account.id)} className={BTN_ROW_ACTION}>
-                      Archive
-                    </button>
-                  )}
+                  <button onClick={() => handleDelete(account)} className={BTN_ROW_ACTION}>
+                    Delete
+                  </button>
                 </div>
               </li>
             ),

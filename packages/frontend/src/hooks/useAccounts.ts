@@ -4,10 +4,10 @@ import * as accountsApi from '../api/accounts.js';
 
 const ACCOUNTS_KEY = ['accounts'] as const;
 
-export function useAccounts(includeArchived = false) {
+export function useAccounts() {
   return useQuery({
-    queryKey: [...ACCOUNTS_KEY, { includeArchived }],
-    queryFn: () => accountsApi.fetchAccounts(includeArchived),
+    queryKey: ACCOUNTS_KEY,
+    queryFn: () => accountsApi.fetchAccounts(),
   });
 }
 
@@ -28,11 +28,14 @@ export function useUpdateAccount() {
   });
 }
 
-export function useArchiveAccount() {
+export function useDeleteAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => accountsApi.archiveAccount(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY }),
+    mutationFn: (id: number) => accountsApi.deleteAccount(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
   });
 }
 
