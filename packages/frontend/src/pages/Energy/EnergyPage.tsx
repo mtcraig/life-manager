@@ -8,6 +8,7 @@ import {
   useEnergyReadings,
 } from '../../hooks/useEnergy.js';
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
+import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 const DEFAULT_UNIT_BY_METER: Record<MeterType, EnergyUnit> = {
@@ -61,7 +62,7 @@ function AddReadingForm() {
         >
           {METER_TYPES.map((type) => (
             <option key={type} value={type}>
-              {type}
+              {humanizeEnumValue(type)}
             </option>
           ))}
         </select>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MATCH_TYPES } from '@life-manager/shared';
 import type { CategorisationRuleDto, CreateCategorisationRuleInput } from '@life-manager/shared';
 import { PagedListFooter } from '../../components/PagedListFooter.js';
+import { humanizeEnumValue } from '../../lib/humanize.js';
 import { useCategories, useCreateCategory } from '../../hooks/useCategories.js';
 import { useCreateVendor, useVendors } from '../../hooks/useVendors.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
@@ -310,7 +311,7 @@ export function CategorisationRulesSettings() {
               >
                 {MATCH_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {humanizeEnumValue(type)}
                   </option>
                 ))}
               </select>
@@ -489,7 +490,7 @@ export function CategorisationRulesSettings() {
                       >
                         {MATCH_TYPES.map((type) => (
                           <option key={type} value={type}>
-                            {type}
+                            {humanizeEnumValue(type)}
                           </option>
                         ))}
                       </select>

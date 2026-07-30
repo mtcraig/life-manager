@@ -143,7 +143,7 @@ function AccountFormFields({
           >
             {INGESTION_MODES.map((mode) => (
               <option key={mode} value={mode}>
-                {mode}
+                {humanizeEnumValue(mode)}
               </option>
             ))}
           </select>
@@ -393,7 +393,7 @@ export function AccountsSettings() {
                 <div>
                   <span className="font-medium text-slate-900 dark:text-slate-100">{account.name}</span>
                   <span className="ml-2 text-xs text-slate-500">
-                    {humanizeEnumValue(account.type)} · {account.ingestionMode}
+                    {humanizeEnumValue(account.type)} · {humanizeEnumValue(account.ingestionMode)}
                   </span>
                   {account.folderPath && (
                     <div className="text-xs text-slate-400">{account.folderPath}</div>

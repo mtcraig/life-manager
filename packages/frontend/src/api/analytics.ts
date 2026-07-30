@@ -1,6 +1,7 @@
 import type {
   AccountBalanceTrendQuery,
   BalanceTrendPointDto,
+  CategoryMonthSummaryRowDto,
   CategorySummaryQuery,
   CategorySummaryRowDto,
   MoneyFlowQuery,
@@ -28,6 +29,10 @@ export function fetchAccountBalanceTrend(query: AccountBalanceTrendQuery) {
 
 export function fetchCategorySummary(query: Partial<CategorySummaryQuery>) {
   return apiFetch<CategorySummaryRowDto[]>(`/analytics/category-summary?${toParams(query)}`);
+}
+
+export function fetchCategorySummaryByMonth(query: Partial<CategorySummaryQuery>) {
+  return apiFetch<CategoryMonthSummaryRowDto[]>(`/analytics/category-summary-by-month?${toParams(query)}`);
 }
 
 export function fetchTopTransactions(query: Partial<TopTransactionsQuery>) {

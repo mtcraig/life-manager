@@ -49,6 +49,13 @@ export const categorySummaryQuerySchema = z.object({
 });
 export type CategorySummaryQuery = z.infer<typeof categorySummaryQuerySchema>;
 
+export interface CategoryMonthSummaryRowDto {
+  month: string; // YYYY-MM
+  categoryId: number | null;
+  categoryName: string;
+  total: number; // integer pence, positive (spending magnitude)
+}
+
 export interface TopTransactionDto {
   id: number;
   date: string; // ISO YYYY-MM-DD

@@ -23,6 +23,11 @@ export async function analyticsRoutes(app: FastifyInstance) {
     return service.getCategorySummary(query);
   });
 
+  app.get('/analytics/category-summary-by-month', async (request) => {
+    const query = categorySummaryQuerySchema.parse(request.query);
+    return service.getCategorySummaryByMonth(query);
+  });
+
   app.get('/analytics/top-transactions', async (request) => {
     const query = topTransactionsQuerySchema.parse(request.query);
     return service.getTopTransactions(query);
