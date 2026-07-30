@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateInvestmentInput, CreateValuationInput } from '@life-manager/shared';
+import type {
+  CreateInvestmentInput,
+  CreateValuationInput,
+  UpdateValuationInput,
+} from '@life-manager/shared';
 import * as investmentsApi from '../api/investments.js';
 
 const INVESTMENTS_KEY = ['investments'] as const;
@@ -46,6 +50,18 @@ export function useArchiveInvestment() {
   });
 }
 
+export function useDeleteInvestment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => investmentsApi.deleteInvestment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
 export function useInvestmentValuations(investmentId: number | null) {
   return useQuery({
     queryKey: valuationsKey(investmentId ?? -1),
@@ -59,6 +75,34 @@ export function useAddInvestmentValuation(investmentId: number) {
   return useMutation({
     mutationFn: (input: CreateValuationInput) =>
       investmentsApi.addInvestmentValuation(investmentId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(investmentId) });
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
+  });
+}
+
+export function useUpdateInvestmentValuation(investmentId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ valuationId, input }: { valuationId: number; input: UpdateValuationInput }) =>
+      investmentsApi.updateInvestmentValuation(investmentId, valuationId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(investmentId) });
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
+  });
+}
+
+export function useDeleteInvestmentValuation(investmentId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (valuationId: number) =>
+      investmentsApi.deleteInvestmentValuation(investmentId, valuationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: valuationsKey(investmentId) });
       queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });

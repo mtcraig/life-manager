@@ -1,4 +1,4 @@
-import { desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { investments, investmentValuations } from '../../db/schema/investments';
 
@@ -74,6 +74,16 @@ export function archiveInvestment(id: number): InvestmentRow | undefined {
     .get();
 }
 
+/** Cascades: valuations have no onDelete cascade at the FK level, so they're
+ * deleted before the investment, all inside one transaction. */
+export function deleteInvestment(id: number): boolean {
+  return db.transaction((tx) => {
+    tx.delete(investmentValuations).where(eq(investmentValuations.investmentId, id)).run();
+    const result = tx.delete(investments).where(eq(investments.id, id)).run();
+    return result.changes > 0;
+  });
+}
+
 export function listValuations(investmentId: number): ValuationRow[] {
   return db
     .select()
@@ -92,6 +102,41 @@ export function insertValuation(
     .values({ ...fields, investmentId, createdAt: Date.now() })
     .returning()
     .get();
+}
+
+export function getValuationById(investmentId: number, valuationId: number): ValuationRow | undefined {
+  return db
+    .select()
+    .from(investmentValuations)
+    .where(
+      and(eq(investmentValuations.id, valuationId), eq(investmentValuations.investmentId, investmentId)),
+    )
+    .get();
+}
+
+export function updateValuation(
+  investmentId: number,
+  valuationId: number,
+  fields: Partial<ValuationWriteFields>,
+): ValuationRow | undefined {
+  return db
+    .update(investmentValuations)
+    .set(fields)
+    .where(
+      and(eq(investmentValuations.id, valuationId), eq(investmentValuations.investmentId, investmentId)),
+    )
+    .returning()
+    .get();
+}
+
+export function deleteValuation(investmentId: number, valuationId: number): boolean {
+  const result = db
+    .delete(investmentValuations)
+    .where(
+      and(eq(investmentValuations.id, valuationId), eq(investmentValuations.investmentId, investmentId)),
+    )
+    .run();
+  return result.changes > 0;
 }
 
 /**

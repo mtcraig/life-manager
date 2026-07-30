@@ -39,10 +39,11 @@ export function useDeleteAccount() {
   });
 }
 
+/** Starts an ingestion job; the caller polls its jobId (useJob) and invalidates
+ * ['transactions'] itself once that job completes, since this mutation only
+ * covers kicking the job off, not its (asynchronous, progress-tracked) completion. */
 export function useIngestAccount() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => accountsApi.ingestAccount(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }

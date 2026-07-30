@@ -2,6 +2,7 @@ import type {
   CreateInvestmentInput,
   CreateValuationInput,
   InvestmentDto,
+  UpdateValuationInput,
   ValuationDto,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -28,6 +29,10 @@ export function archiveInvestment(id: number) {
   return apiFetch<InvestmentDto>(`/investments/${id}/archive`, { method: 'POST' });
 }
 
+export function deleteInvestment(id: number) {
+  return apiFetch<void>(`/investments/${id}`, { method: 'DELETE' });
+}
+
 export function fetchInvestmentValuations(investmentId: number) {
   return apiFetch<ValuationDto[]>(`/investments/${investmentId}/valuations`);
 }
@@ -37,4 +42,19 @@ export function addInvestmentValuation(investmentId: number, input: CreateValuat
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function updateInvestmentValuation(
+  investmentId: number,
+  valuationId: number,
+  input: UpdateValuationInput,
+) {
+  return apiFetch<ValuationDto>(`/investments/${investmentId}/valuations/${valuationId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteInvestmentValuation(investmentId: number, valuationId: number) {
+  return apiFetch<void>(`/investments/${investmentId}/valuations/${valuationId}`, { method: 'DELETE' });
 }

@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
+import type { AccountDto } from '@life-manager/shared';
 import { BalanceTrendChart } from '../../components/charts/BalanceTrendChart.js';
 import { CategorySpendingChart } from '../../components/charts/CategorySpendingChart.js';
 import { useAccounts } from '../../hooks/useAccounts.js';
 import { useAccountBalanceTrend, useCategorySummaryByMonth } from '../../hooks/useAnalytics.js';
 import { fetchAccountBalanceTrend } from '../../api/analytics.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+
+const INSTITUTION_CLASS = 'text-indigo-600 dark:text-indigo-400 font-medium';
+
+/** savings -> amber, credit_card -> always red (it's a liability), everything else by sign. */
+function accountBalanceClass(type: AccountDto['type'], balance: number): string {
+  if (type === 'savings') return 'text-amber-600 dark:text-amber-400';
+  if (type === 'credit_card') return 'text-red-600 dark:text-red-400';
+  return balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+}
 
 const YEAR_FILTER_WINDOW = 4;
 
@@ -77,7 +87,7 @@ function CategorySpendingSection({
   );
 }
 
-function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number; name: string }[]; selectedYear: YearFilter }) {
+function AllAccountsSummary({ accounts, selectedYear }: { accounts: AccountDto[]; selectedYear: YearFilter }) {
   const balanceQueries = useQueries({
     queries: accounts.map((account) => ({
       queryKey: ['analytics', 'account-balance-trend', { accountId: account.id }],
@@ -115,12 +125,13 @@ function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {balances.map(({ account, balance }) => (
             <li key={account.id} className="flex items-center justify-between py-2 text-sm">
-              <span className="text-slate-700 dark:text-slate-300">{account.name}</span>
-              <span
-                className={`font-medium ${
-                  balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                }`}
-              >
+              <span className="text-slate-700 dark:text-slate-300">
+                {account.name}
+                {account.institution && (
+                  <span className={`ml-2 text-xs ${INSTITUTION_CLASS}`}>{account.institution}</span>
+                )}
+              </span>
+              <span className={`font-medium ${accountBalanceClass(account.type, balance)}`}>
                 {formatMoney(balance)}
               </span>
             </li>
@@ -133,7 +144,14 @@ function AllAccountsSummary({ accounts, selectedYear }: { accounts: { id: number
   );
 }
 
-function AccountDetail({ accountId, selectedYear }: { accountId: number; selectedYear: YearFilter }) {
+function AccountDetail({
+  account,
+  selectedYear,
+}: {
+  account: AccountDto;
+  selectedYear: YearFilter;
+}) {
+  const accountId = account.id;
   const {
     data: trend,
     isPending: isTrendPending,
@@ -155,12 +173,17 @@ function AccountDetail({ accountId, selectedYear }: { accountId: number; selecte
   return (
     <>
       <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          {account.name}
+          {account.institution && (
+            <span className={`ml-2 text-xs ${INSTITUTION_CLASS}`}>{account.institution}</span>
+          )}
+        </h2>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="text-xs uppercase tracking-wide text-slate-500">{balanceLabel}</div>
-        <div
-          className={`mt-1 text-2xl font-semibold ${
-            currentBalance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}
-        >
+        <div className={`mt-1 text-2xl font-semibold ${accountBalanceClass(account.type, currentBalance)}`}>
           {formatMoney(currentBalance)}
         </div>
       </div>
@@ -189,6 +212,7 @@ export function AccountsPage() {
   const [viewMode, setViewMode] = useState<'all' | 'account'>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(undefined);
   const [selectedYear, setSelectedYear] = useState<YearFilter>(new Date().getFullYear());
+  const selectedAccount = accounts?.find((a) => a.id === selectedAccountId);
 
   return (
     <div className="space-y-4">
@@ -237,8 +261,8 @@ export function AccountsPage() {
           </div>
 
           {viewMode === 'all' && <AllAccountsSummary accounts={accounts} selectedYear={selectedYear} />}
-          {viewMode === 'account' && selectedAccountId !== undefined && (
-            <AccountDetail accountId={selectedAccountId} selectedYear={selectedYear} />
+          {viewMode === 'account' && selectedAccount && (
+            <AccountDetail account={selectedAccount} selectedYear={selectedYear} />
           )}
         </>
       )}

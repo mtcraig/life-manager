@@ -5,6 +5,9 @@ export interface PropertyDto {
   name: string;
   address: string | null;
   notes: string | null;
+  // Geocoded from `address`; null if not yet geocoded, geocoding failed, or no address is set.
+  lat: string | null;
+  lng: string | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;

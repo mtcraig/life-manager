@@ -10,6 +10,10 @@ export const accounts = sqliteTable('accounts', {
   // ingestion mode, or watched continuously for 'watched' mode — same folder either way.
   folderPath: text('folder_path'),
   columnMapping: text('column_mapping', { mode: 'json' }).$type<Record<string, string>>(),
+  // Set once the one-time credit-card sign backfill (see backfillCreditCardSign) has
+  // negated this account's existing transaction amounts. Prevents re-running it twice
+  // and flipping an already-corrected account back to the wrong sign.
+  creditCardSignFixedAt: integer('credit_card_sign_fixed_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

@@ -23,3 +23,6 @@ export const createValuationSchema = z.object({
   notes: z.string().min(1).optional(),
 });
 export type CreateValuationInput = z.infer<typeof createValuationSchema>;
+
+export const updateValuationSchema = createValuationSchema.partial();
+export type UpdateValuationInput = z.infer<typeof updateValuationSchema>;

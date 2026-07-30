@@ -3,7 +3,9 @@
 Life Manager is a personal finance dashboard that runs entirely on your own computer.
 It replaces a spreadsheet/Power BI setup with one place to track bank accounts,
 investments, property, insurance, household contents, and energy usage, and to see how
-they all add up to your net wealth. Nothing you enter ever leaves your machine.
+they all add up to your net wealth. Nothing you enter ever leaves your machine, except a
+property's address, which is sent to OpenStreetMap's free geocoding service to place it
+on the map (see [README.md](README.md)).
 
 This guide covers day-to-day use. For installing dependencies and running the dev
 servers for the first time, see [README.md](README.md) — the short version is:
@@ -61,9 +63,11 @@ pages depend on data existing elsewhere:
 Go to **Settings → Accounts → Add account**. Fill in:
 
 - **Name** — whatever you want to call it (e.g. "Joint Current Account").
-- **Type** — `current`, `savings`, `credit_card`, or `other`. This is descriptive only;
-  it doesn't change how the account behaves.
-- **Institution** (optional) — the bank name, for your own reference.
+- **Type** — `current`, `savings`, `credit_card`, or `other`. `savings` and
+  `credit_card` get their own balance colour on the Accounts page (amber and red), and
+  `credit_card` also affects behaviour: see [Credit cards](#credit-cards) below.
+- **Institution** (optional) — the bank name, shown as a highlighted label next to the
+  account name throughout the app.
 - **Ingestion mode** — `manual` or `watched` (see below).
 - **CSV folder path** — leave blank if you're not ready to import transactions yet. Once
   you fill this in, a "CSV column mapping" section appears (see next section).
@@ -99,6 +103,20 @@ Every import (successful or failed) is logged under **Settings → Ingestion**, 
 see what was imported and when, and diagnose a failed import (e.g. wrong column mapping)
 without re-running it blind.
 
+Ingesting shows a progress bar while it runs rather than freezing the page — this can
+take a while against a large file or an account with many categorisation rules, since
+every new transaction is matched against every rule.
+
+### Credit cards
+
+`credit_card`-type accounts are treated as debt, not a bank balance you hold: on import,
+transaction amounts are automatically negated so that spending reduces the balance and
+payments increase it, matching the "money out = negative" convention every other account
+type already uses (most card exports report spending as positive, which is backwards).
+The account's outstanding balance is counted under **Liabilities** on the Wealth page,
+not liquid assets — a card in credit contributes nothing to liabilities, but a card in
+debt is deducted from net wealth like any other liability.
+
 ### Categorising transactions
 
 New transactions land as **Uncategorised** until a rule matches them, or you categorise
@@ -117,10 +135,13 @@ You can also **bulk import rules** from a CSV (e.g. a spreadsheet lookup you alr
 keep), telling the app which columns hold the pattern, category, and (optionally) match
 type.
 
-Rules only apply automatically **as transactions are imported**. If you add or change
-rules after transactions already exist, click **Recategorise Uncategorised transactions**
-to re-run matching against everything still sitting as Uncategorised — it won't touch
-transactions you've already categorised (by rule or by hand).
+Adding, editing, or bulk-importing rules automatically re-applies them to your existing
+transactions (not just future imports) — this runs as a background job with a progress
+bar, since matching against every rule can take a moment with a lot of transaction
+history. You can also trigger this manually any time by clicking **Recategorise
+Uncategorised transactions**, which re-runs matching against everything still sitting as
+Uncategorised — it won't touch transactions you've already categorised (by rule or by
+hand).
 
 To categorise (or re-categorise) a transaction by hand, go to the **Detail** page and use
 the category dropdown directly in the table — changes save immediately.
@@ -157,7 +178,9 @@ transactions**, but deliberately still include Uncategorised ones (see
 Go to the **Investments** page to add holdings (pensions, ISAs, stocks — whatever you
 want to track). Each investment can have **multiple valuations over time** — click a
 holding to expand its valuation history and add a new one (date + value). The most recent
-valuation is what counts toward its current value everywhere else in the app.
+valuation is what counts toward its current value everywhere else in the app. Use Edit
+and Delete next to Archive to fix a mistake or remove a holding entirely; the same
+buttons appear on each valuation in the expanded history.
 
 The same page also has **retirement projection scenarios**: give a scenario a name,
 assumed annual growth rate, monthly contribution, and a retirement date (retirement age
@@ -170,19 +193,26 @@ growth. Add as many scenarios as you want to compare assumptions side by side.
 The **Wealth** page is a read-only summary (net wealth, liquid vs non-liquid assets,
 liabilities) plus the ability to add **Properties** and **Liabilities** — both work the
 same way as Investments: add one, then expand it to record valuations over time (a
-property's value, a mortgage's outstanding balance, etc).
+property's value, a mortgage's outstanding balance, etc), with Edit/Delete available on
+both the entity and each individual valuation.
+
+If a property has an address, a map with a pin for it appears above the property list
+once the address resolves to a location (this sends the address text to OpenStreetMap's
+free geocoding service — see the note at the top of [README.md](README.md)). Properties
+without a resolved location are simply left off the map.
 
 The net wealth formula:
 
 ```
-Liquid assets     = all account balances + investments (latest valuation each)
+Liquid assets     = all non-credit-card account balances + investments (latest valuation each)
 Non-liquid assets = properties (latest valuation each) + contents (total item value)
-Net wealth         = liquid + non-liquid − liabilities (latest valuation each)
+Liabilities        = liabilities (latest valuation each) + any credit_card account debt
+Net wealth         = liquid + non-liquid − liabilities
 ```
 
 Archived accounts, investments, properties, and liabilities are excluded from these
-totals — archiving something (rather than deleting it) keeps its history for reference
-without it counting toward current wealth.
+totals — archiving keeps something's history for reference without it counting toward
+current wealth, without permanently removing it the way Delete does.
 
 ### Insurance
 
@@ -229,9 +259,10 @@ A few rules apply consistently across the app and are worth understanding:
   and is deliberately *included* in money-in/out — otherwise your totals would silently
   under-count until you got around to categorising everything.
 - **Archiving vs deleting.** Accounts, investments, properties, and liabilities can be
-  archived rather than deleted — archived items keep their full history but stop
-  counting toward current totals (Wealth, balances, etc). There's no "delete" for these;
-  archiving is the intended way to retire something you no longer hold.
+  either archived or deleted. Archive when you want to retire something but keep its
+  history for reference — it stops counting toward current totals (Wealth, balances,
+  etc) but everything about it is preserved. Delete when you want it and its valuation
+  history gone permanently (e.g. it was added by mistake) — this cannot be undone.
 - **"Latest valuation" drives current value.** For investments, properties, and
   liabilities, whatever you enter as the most recent valuation (by date) is what's used
   everywhere — Wealth totals, the holding's displayed current value, and projections.
@@ -267,6 +298,9 @@ over.
   folder beforehand (e.g. from before you switched the account to watched mode) won't be
   auto-ingested — click **Ingest now** once to pick those up (it works regardless of
   ingestion mode); anything saved into the folder after that is automatic.
-- **A transaction stays Uncategorised after adding a matching rule** — rules only apply
-  automatically to new imports. Go to Settings → Categorisation Rules and click
-  "Recategorise Uncategorised transactions" to apply rules retroactively.
+- **A transaction stays Uncategorised after adding a matching rule** — adding a rule
+  automatically re-applies it to existing transactions as a background job; give it a
+  moment (there's a progress bar). If it's still Uncategorised once that finishes, the
+  rule's pattern/match type genuinely doesn't match that description — check it under
+  Settings → Categorisation Rules, or click "Recategorise Uncategorised transactions" to
+  re-run matching.

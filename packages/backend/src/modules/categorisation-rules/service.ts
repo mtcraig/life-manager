@@ -3,7 +3,9 @@ import type {
   BulkImportRulesInput,
   BulkImportRulesResultDto,
   CategorisationRuleDto,
+  CategorisationRuleMutationResultDto,
   CreateCategorisationRuleInput,
+  RecategoriseResultDto,
   UpdateCategorisationRuleInput,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
@@ -11,10 +13,14 @@ import * as categoriesRepo from '../categories/repo';
 import * as vendorsRepo from '../vendors/repo';
 import * as transactionsRepo from '../transactions/repo';
 import type { TransactionRow } from '../transactions/repo';
+import * as jobsRepo from '../jobs/repo';
 import * as repo from './repo';
 import type { CategorisationRuleRow } from './repo';
 import { matchDescription } from './fuzzyMatcher';
 import type { RuleForMatching } from './fuzzyMatcher';
+
+/** Progress is reported (and the event loop yielded) every this many candidate rows. */
+const YIELD_EVERY = 25;
 
 function toDto(row: CategorisationRuleRow): CategorisationRuleDto {
   return {
@@ -49,7 +55,7 @@ export function getRulesForMatching(): RuleForMatching[] {
   return repo.listRules().map(toRuleForMatching);
 }
 
-export function createRule(input: CreateCategorisationRuleInput): CategorisationRuleDto {
+export function createRule(input: CreateCategorisationRuleInput): CategorisationRuleMutationResultDto {
   if (!categoriesRepo.getCategoryById(input.categoryId)) {
     throw new HttpError(404, `Category ${input.categoryId} not found`);
   }
@@ -64,11 +70,14 @@ export function createRule(input: CreateCategorisationRuleInput): Categorisation
     priority: input.priority,
     source: 'manual',
   });
-  reapplyRulesTo(transactionsRepo.listUncategorisedOrRuleSourced());
-  return toDto(row);
+  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced());
+  return { rule: toDto(row), jobId };
 }
 
-export function updateRule(id: number, input: UpdateCategorisationRuleInput): CategorisationRuleDto {
+export function updateRule(
+  id: number,
+  input: UpdateCategorisationRuleInput,
+): CategorisationRuleMutationResultDto {
   if (!repo.getRuleById(id)) {
     throw new HttpError(404, `Rule ${id} not found`);
   }
@@ -86,8 +95,8 @@ export function updateRule(id: number, input: UpdateCategorisationRuleInput): Ca
     ...(input.matchType !== undefined && { matchType: input.matchType }),
     ...(input.priority !== undefined && { priority: input.priority }),
   });
-  reapplyRulesTo(transactionsRepo.listUncategorisedOrRuleSourced());
-  return toDto(row as NonNullable<typeof row>);
+  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced());
+  return { rule: toDto(row as NonNullable<typeof row>), jobId };
 }
 
 /**
@@ -110,7 +119,9 @@ export function deleteRule(id: number): void {
  * don't already exist, since the spreadsheet's lookup is the source of truth
  * being migrated in. Vendor is mandatory on every rule, matching the manual
  * add/edit forms, so rows missing a vendor are skipped like rows missing a
- * pattern or category.
+ * pattern or category. Once rules are inserted, they're applied to existing
+ * transactions the same way a single manual rule create/edit is — as a
+ * background job, since a bulk import can add many rules at once.
  */
 export function bulkImportRules(input: BulkImportRulesInput): BulkImportRulesResultDto {
   const records: Record<string, string>[] = parse(input.csvContent, {
@@ -162,7 +173,23 @@ export function bulkImportRules(input: BulkImportRulesInput): BulkImportRulesRes
     rulesCreated += 1;
   }
 
-  return { rulesCreated, categoriesCreated, vendorsCreated };
+  const jobId =
+    rulesCreated > 0 ? startRecategoriseJob(transactionsRepo.listUncategorisedOrRuleSourced()).jobId : null;
+
+  return { rulesCreated, categoriesCreated, vendorsCreated, jobId };
+}
+
+/** Re-runs matching over every currently-Uncategorised transaction using the latest rule set. */
+export function recategoriseUncategorised(): RecategoriseResultDto {
+  return { jobId: startRecategoriseJob(transactionsRepo.listUncategorised()).jobId };
+}
+
+function startRecategoriseJob(candidates: TransactionRow[]): { jobId: number } {
+  const job = jobsRepo.createJob('recategorise', candidates.length);
+  runRecategoriseJob(job.id, candidates).catch((error) => {
+    jobsRepo.failJob(job.id, error instanceof Error ? error.message : String(error));
+  });
+  return { jobId: job.id };
 }
 
 /**
@@ -175,10 +202,26 @@ export function bulkImportRules(input: BulkImportRulesInput): BulkImportRulesRes
  * A transaction previously matched by a rule that no longer matches falls
  * back to whatever (if anything) currently matches, which may mean an
  * eligible field becomes unset again.
+ *
+ * Runs as a chunked background job (rather than a plain loop) because this is
+ * O(candidates × rules) — potentially slow — and yielding the event loop
+ * every YIELD_EVERY rows lets a concurrent `GET /jobs/:id` poll observe
+ * progress instead of the whole matching pass blocking Node's single thread.
+ *
+ * Yields once *before* doing any work, not just every YIELD_EVERY rows: an
+ * async function runs synchronously up to its first `await`, so without this
+ * the first chunk would run inline within the caller's own call stack —
+ * blocking the createRule/updateRule HTTP response on however long the first
+ * YIELD_EVERY candidates take, defeating the "respond immediately with a
+ * jobId, report progress after" point of this whole background-job design.
  */
-function reapplyRulesTo(candidates: TransactionRow[]): number {
+async function runRecategoriseJob(jobId: number, candidates: TransactionRow[]): Promise<void> {
+  await new Promise((resolve) => setImmediate(resolve));
+
   const rules = getRulesForMatching();
   let updated = 0;
+  let processed = 0;
+
   for (const txn of candidates) {
     const match = matchDescription(txn.normalizedDescription, rules);
 
@@ -207,11 +250,14 @@ function reapplyRulesTo(candidates: TransactionRow[]): number {
       });
       updated += 1;
     }
-  }
-  return updated;
-}
 
-/** Re-runs matching over every currently-Uncategorised transaction using the latest rule set. */
-export function recategoriseUncategorised(): { updated: number } {
-  return { updated: reapplyRulesTo(transactionsRepo.listUncategorised()) };
+    processed += 1;
+    if (processed % YIELD_EVERY === 0) {
+      jobsRepo.updateProgress(jobId, processed);
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  }
+
+  jobsRepo.updateProgress(jobId, candidates.length);
+  jobsRepo.completeJob(jobId, JSON.stringify({ updated }));
 }

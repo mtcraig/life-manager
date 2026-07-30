@@ -2,6 +2,7 @@ import type {
   CreateInvestmentInput,
   CreateValuationInput,
   InvestmentDto,
+  UpdateValuationInput,
   ValuationDto,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
@@ -78,6 +79,13 @@ export function archiveInvestment(id: number): InvestmentDto {
   return toDto(row, latestValues.get(id) ?? null);
 }
 
+export function deleteInvestment(id: number): void {
+  if (!repo.getInvestmentById(id)) {
+    throw new HttpError(404, `Investment ${id} not found`);
+  }
+  repo.deleteInvestment(id);
+}
+
 export function listValuations(investmentId: number): ValuationDto[] {
   if (!repo.getInvestmentById(investmentId)) {
     throw new HttpError(404, `Investment ${investmentId} not found`);
@@ -102,4 +110,34 @@ export function addValuation(investmentId: number, input: CreateValuationInput):
     }
     throw error;
   }
+}
+
+export function updateValuation(
+  investmentId: number,
+  valuationId: number,
+  input: UpdateValuationInput,
+): ValuationDto {
+  if (!repo.getValuationById(investmentId, valuationId)) {
+    throw new HttpError(404, `Valuation ${valuationId} not found for investment ${investmentId}`);
+  }
+  try {
+    const row = repo.updateValuation(investmentId, valuationId, {
+      ...(input.asOfDate !== undefined && { asOfDate: input.asOfDate }),
+      ...(input.value !== undefined && { value: input.value }),
+      ...(input.notes !== undefined && { notes: input.notes ?? null }),
+    });
+    return valuationToDto(row as NonNullable<typeof row>);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      throw new HttpError(409, `A valuation for ${input.asOfDate} already exists`);
+    }
+    throw error;
+  }
+}
+
+export function deleteValuation(investmentId: number, valuationId: number): void {
+  if (!repo.getValuationById(investmentId, valuationId)) {
+    throw new HttpError(404, `Valuation ${valuationId} not found for investment ${investmentId}`);
+  }
+  repo.deleteValuation(investmentId, valuationId);
 }

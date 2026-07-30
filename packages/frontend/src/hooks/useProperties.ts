@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreatePropertyInput, CreateValuationInput } from '@life-manager/shared';
+import type { CreatePropertyInput, CreateValuationInput, UpdateValuationInput } from '@life-manager/shared';
 import * as propertiesApi from '../api/properties.js';
 
 const PROPERTIES_KEY = ['properties'] as const;
@@ -37,6 +37,17 @@ export function useArchiveProperty() {
   });
 }
 
+export function useDeleteProperty() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => propertiesApi.deleteProperty(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
 export function usePropertyValuations(propertyId: number | null) {
   return useQuery({
     queryKey: valuationsKey(propertyId ?? -1),
@@ -50,6 +61,31 @@ export function useAddPropertyValuation(propertyId: number) {
   return useMutation({
     mutationFn: (input: CreateValuationInput) =>
       propertiesApi.addPropertyValuation(propertyId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(propertyId) });
+      queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
+export function useUpdatePropertyValuation(propertyId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ valuationId, input }: { valuationId: number; input: UpdateValuationInput }) =>
+      propertiesApi.updatePropertyValuation(propertyId, valuationId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: valuationsKey(propertyId) });
+      queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
+export function useDeletePropertyValuation(propertyId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (valuationId: number) => propertiesApi.deletePropertyValuation(propertyId, valuationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: valuationsKey(propertyId) });
       queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });

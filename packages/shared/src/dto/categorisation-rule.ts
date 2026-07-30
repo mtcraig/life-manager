@@ -45,4 +45,17 @@ export interface BulkImportRulesResultDto {
   rulesCreated: number;
   categoriesCreated: number;
   vendorsCreated: number;
+  /** Job re-applying rules to existing transactions, or null if no rules were created. */
+  jobId: number | null;
+}
+
+/** Recategorisation of existing transactions runs as a background job (see JobDto)
+ * so the frontend can show progress instead of blocking on one long request. */
+export interface CategorisationRuleMutationResultDto {
+  rule: CategorisationRuleDto;
+  jobId: number;
+}
+
+export interface RecategoriseResultDto {
+  jobId: number;
 }

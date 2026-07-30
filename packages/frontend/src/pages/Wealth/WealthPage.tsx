@@ -5,19 +5,26 @@ import {
   useArchiveProperty,
   useAddPropertyValuation,
   useCreateProperty,
+  useDeleteProperty,
+  useDeletePropertyValuation,
   useProperties,
   usePropertyValuations,
   useUpdateProperty,
+  useUpdatePropertyValuation,
 } from '../../hooks/useProperties.js';
 import {
   useArchiveLiability,
   useAddLiabilityValuation,
   useCreateLiability,
+  useDeleteLiability,
+  useDeleteLiabilityValuation,
   useLiabilities,
   useLiabilityValuations,
   useUpdateLiability,
+  useUpdateLiabilityValuation,
 } from '../../hooks/useLiabilities.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
+import { PropertyMap } from '../../components/PropertyMap.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
@@ -50,6 +57,7 @@ function PropertiesSection() {
   const { data: properties, isPending, isError } = useProperties();
   const createProperty = useCreateProperty();
   const archiveProperty = useArchiveProperty();
+  const deleteProperty = useDeleteProperty();
   const updateProperty = useUpdateProperty();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -57,14 +65,35 @@ function PropertiesSection() {
   const [editAddress, setEditAddress] = useState('');
   const { data: valuations, isPending: isValuationsPending } = usePropertyValuations(expandedId);
   const addValuation = useAddPropertyValuation(expandedId ?? -1);
+  const updateValuation = useUpdatePropertyValuation(expandedId ?? -1);
+  const deleteValuation = useDeletePropertyValuation(expandedId ?? -1);
 
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [rowError, setRowError] = useState<string | null>(null);
 
   function startEditing(property: { id: number; name: string; address: string | null }) {
     setEditingId(property.id);
     setEditName(property.name);
     setEditAddress(property.address ?? '');
+  }
+
+  function handleArchive(propertyId: number) {
+    setRowError(null);
+    archiveProperty.mutate(propertyId, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
+  }
+
+  function handleDelete(property: { id: number; name: string }) {
+    const confirmed = window.confirm(
+      `Permanently delete "${property.name}" and all its valuations? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setRowError(null);
+    deleteProperty.mutate(property.id, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
   }
 
   function handleEditSubmit(event: React.FormEvent, propertyId: number) {
@@ -114,8 +143,14 @@ function PropertiesSection() {
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load properties.</p>}
+      {rowError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
       {properties && properties.length === 0 && (
         <p className="text-sm text-slate-500">No properties yet — add one above.</p>
+      )}
+      {properties && properties.length > 0 && (
+        <div className="mb-4">
+          <PropertyMap properties={properties} />
+        </div>
       )}
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {properties?.map((property) => (
@@ -162,8 +197,11 @@ function PropertiesSection() {
                   <button onClick={() => startEditing(property)} className={BTN_ROW_ACTION}>
                     Edit
                   </button>
-                  <button onClick={() => archiveProperty.mutate(property.id)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => handleArchive(property.id)} className={BTN_ROW_ACTION}>
                     Archive
+                  </button>
+                  <button onClick={() => handleDelete(property)} className={BTN_ROW_ACTION}>
+                    Delete
                   </button>
                 </div>
               </div>
@@ -174,6 +212,8 @@ function PropertiesSection() {
                 isPending={isValuationsPending}
                 onAddValuation={(input) => addValuation.mutate(input)}
                 isAdding={addValuation.isPending}
+                onUpdateValuation={(valuationId, input) => updateValuation.mutate({ valuationId, input })}
+                onDeleteValuation={(valuationId) => deleteValuation.mutate(valuationId)}
               />
             )}
           </li>
@@ -187,13 +227,17 @@ function LiabilitiesSection() {
   const { data: liabilities, isPending, isError } = useLiabilities();
   const createLiability = useCreateLiability();
   const archiveLiability = useArchiveLiability();
+  const deleteLiability = useDeleteLiability();
   const updateLiability = useUpdateLiability();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editKind, setEditKind] = useState('');
+  const [rowError, setRowError] = useState<string | null>(null);
   const { data: valuations, isPending: isValuationsPending } = useLiabilityValuations(expandedId);
   const addValuation = useAddLiabilityValuation(expandedId ?? -1);
+  const updateValuation = useUpdateLiabilityValuation(expandedId ?? -1);
+  const deleteValuation = useDeleteLiabilityValuation(expandedId ?? -1);
 
   const [name, setName] = useState('');
   const [kind, setKind] = useState('');
@@ -220,6 +264,24 @@ function LiabilitiesSection() {
         setName('');
         setKind('');
       },
+    });
+  }
+
+  function handleArchive(liabilityId: number) {
+    setRowError(null);
+    archiveLiability.mutate(liabilityId, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
+  }
+
+  function handleDelete(liability: { id: number; name: string }) {
+    const confirmed = window.confirm(
+      `Permanently delete "${liability.name}" and all its valuations? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    setRowError(null);
+    deleteLiability.mutate(liability.id, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
     });
   }
 
@@ -252,6 +314,7 @@ function LiabilitiesSection() {
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load liabilities.</p>}
+      {rowError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
       {liabilities && liabilities.length === 0 && (
         <p className="text-sm text-slate-500">No liabilities yet — add one above.</p>
       )}
@@ -301,8 +364,11 @@ function LiabilitiesSection() {
                   <button onClick={() => startEditing(liability)} className={BTN_ROW_ACTION}>
                     Edit
                   </button>
-                  <button onClick={() => archiveLiability.mutate(liability.id)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => handleArchive(liability.id)} className={BTN_ROW_ACTION}>
                     Archive
+                  </button>
+                  <button onClick={() => handleDelete(liability)} className={BTN_ROW_ACTION}>
+                    Delete
                   </button>
                 </div>
               </div>
@@ -313,6 +379,8 @@ function LiabilitiesSection() {
                 isPending={isValuationsPending}
                 onAddValuation={(input) => addValuation.mutate(input)}
                 isAdding={addValuation.isPending}
+                onUpdateValuation={(valuationId, input) => updateValuation.mutate({ valuationId, input })}
+                onDeleteValuation={(valuationId) => deleteValuation.mutate(valuationId)}
               />
             )}
           </li>

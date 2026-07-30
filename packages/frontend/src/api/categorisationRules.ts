@@ -2,7 +2,9 @@ import type {
   BulkImportRulesInput,
   BulkImportRulesResultDto,
   CategorisationRuleDto,
+  CategorisationRuleMutationResultDto,
   CreateCategorisationRuleInput,
+  RecategoriseResultDto,
   UpdateCategorisationRuleInput,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -12,14 +14,14 @@ export function fetchCategorisationRules() {
 }
 
 export function createCategorisationRule(input: CreateCategorisationRuleInput) {
-  return apiFetch<CategorisationRuleDto>('/categorisation-rules', {
+  return apiFetch<CategorisationRuleMutationResultDto>('/categorisation-rules', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
 export function updateCategorisationRule(id: number, input: UpdateCategorisationRuleInput) {
-  return apiFetch<CategorisationRuleDto>(`/categorisation-rules/${id}`, {
+  return apiFetch<CategorisationRuleMutationResultDto>(`/categorisation-rules/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
@@ -37,5 +39,5 @@ export function bulkImportCategorisationRules(input: BulkImportRulesInput) {
 }
 
 export function recategoriseUncategorised() {
-  return apiFetch<{ updated: number }>('/categorisation-rules/recategorise', { method: 'POST' });
+  return apiFetch<RecategoriseResultDto>('/categorisation-rules/recategorise', { method: 'POST' });
 }

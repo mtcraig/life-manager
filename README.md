@@ -2,7 +2,10 @@
 
 A local-only personal finance dashboard: accounts, transactions, wealth, investments,
 insurance, energy usage, and household contents in one place. Everything runs on your
-own machine — no data ever leaves the local network.
+own machine — no data ever leaves the local network, with one narrow exception: if you
+give a property an address, that address text is sent to the free OpenStreetMap
+Nominatim API to place a pin on the map (see the Wealth section of
+[USER_GUIDE.md](USER_GUIDE.md)). No other feature makes an external call.
 
 ## Architecture
 
@@ -26,6 +29,16 @@ npm run db:seed --workspace=@life-manager/backend
 `db:migrate` creates the SQLite database (see **Data storage** below) and applies the
 schema. `db:seed` adds starter data: a "Transfer" category, default contents areas, and
 common transaction categories.
+
+If you're updating an existing install that already had `credit_card` accounts with
+transactions ingested before this fix, also run the one-time backfill below — see
+**Credit card accounts** under Ingesting transactions for why.
+
+```bash
+npm run db:backfill-credit-card-sign --workspace=@life-manager/backend
+```
+
+Safe to re-run: it's idempotent and only touches each `credit_card` account once.
 
 ## Running the app
 
@@ -84,7 +97,25 @@ Each account is configured for either **manual** ingestion (click "Ingest now" i
 Settings → Accounts after dropping a CSV export somewhere) or a **watched folder**
 (any CSV file placed in the configured folder is picked up automatically). Column
 mapping (which CSV columns are date/description/amount) is configured per account,
-since bank export formats vary by institution.
+since bank export formats vary by institution. CSV files are read tolerantly of
+encoding — UTF-8 (with or without a BOM) and Windows-1252/Latin-1 exports (common for
+UK bank statements containing "£") are both handled automatically.
+
+Ingesting a large file, or adding/editing a categorisation rule while you have a lot of
+transaction history, re-matches every affected transaction against your rule set —
+potentially slow with many rules. Both run as a background job with a progress bar in
+the UI rather than blocking; you can keep using the app while a large ingest or
+recategorisation runs.
+
+### Credit card accounts
+
+Accounts with type `credit_card` are treated as a liability, not a bank balance: on
+import, amounts are negated so spending reduces (rather than increases) the account's
+balance, consistent with every other account type's "money out = negative" convention —
+most card exports report spending as positive and payments as negative, the opposite of
+that. Wealth totals count a credit card's outstanding balance under **liabilities**, not
+liquid assets. If you had `credit_card` transactions imported before this behaviour
+existed, run the one-time backfill mentioned under Setup above.
 
 Energy readings use a fixed CSV format instead (`meterType,readingDate,value,unit,notes`)
 since that's the app's own internal format, not a bank export — see the Energy page for

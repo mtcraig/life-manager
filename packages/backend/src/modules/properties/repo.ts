@@ -1,4 +1,4 @@
-import { desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { properties, propertyValuations } from '../../db/schema/properties';
 
@@ -7,6 +7,8 @@ export interface PropertyRow {
   name: string;
   address: string | null;
   notes: string | null;
+  lat: string | null;
+  lng: string | null;
   archivedAt: number | null;
   createdAt: number;
   updatedAt: number;
@@ -16,6 +18,8 @@ export interface PropertyWriteFields {
   name: string;
   address: string | null;
   notes: string | null;
+  lat?: string | null;
+  lng?: string | null;
 }
 
 export interface ValuationRow {
@@ -74,6 +78,16 @@ export function archiveProperty(id: number): PropertyRow | undefined {
     .get();
 }
 
+/** Cascades: valuations have no onDelete cascade at the FK level, so they're
+ * deleted before the property, all inside one transaction. */
+export function deleteProperty(id: number): boolean {
+  return db.transaction((tx) => {
+    tx.delete(propertyValuations).where(eq(propertyValuations.propertyId, id)).run();
+    const result = tx.delete(properties).where(eq(properties.id, id)).run();
+    return result.changes > 0;
+  });
+}
+
 export function listValuations(propertyId: number): ValuationRow[] {
   return db
     .select()
@@ -89,6 +103,35 @@ export function insertValuation(propertyId: number, fields: ValuationWriteFields
     .values({ ...fields, propertyId, createdAt: Date.now() })
     .returning()
     .get();
+}
+
+export function getValuationById(propertyId: number, valuationId: number): ValuationRow | undefined {
+  return db
+    .select()
+    .from(propertyValuations)
+    .where(and(eq(propertyValuations.id, valuationId), eq(propertyValuations.propertyId, propertyId)))
+    .get();
+}
+
+export function updateValuation(
+  propertyId: number,
+  valuationId: number,
+  fields: Partial<ValuationWriteFields>,
+): ValuationRow | undefined {
+  return db
+    .update(propertyValuations)
+    .set(fields)
+    .where(and(eq(propertyValuations.id, valuationId), eq(propertyValuations.propertyId, propertyId)))
+    .returning()
+    .get();
+}
+
+export function deleteValuation(propertyId: number, valuationId: number): boolean {
+  const result = db
+    .delete(propertyValuations)
+    .where(and(eq(propertyValuations.id, valuationId), eq(propertyValuations.propertyId, propertyId)))
+    .run();
+  return result.changes > 0;
 }
 
 /**

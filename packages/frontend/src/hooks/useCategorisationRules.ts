@@ -15,14 +15,15 @@ export function useCategorisationRules() {
   });
 }
 
+/** ['transactions'] is invalidated once the returned jobId's recategorise job
+ * completes (see CategorisationRulesSettings' useJob wiring), not here — the
+ * rule itself is created immediately, but reapplying it to existing
+ * transactions runs as an async, progress-tracked background job. */
 export function useCreateCategorisationRule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateCategorisationRuleInput) => rulesApi.createCategorisationRule(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: RULES_KEY });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: RULES_KEY }),
   });
 }
 
@@ -31,10 +32,7 @@ export function useUpdateCategorisationRule() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: UpdateCategorisationRuleInput }) =>
       rulesApi.updateCategorisationRule(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: RULES_KEY });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: RULES_KEY }),
   });
 }
 
@@ -58,10 +56,9 @@ export function useBulkImportCategorisationRules() {
   });
 }
 
+/** Also job-based — see the comment on useCreateCategorisationRule. */
 export function useRecategoriseUncategorised() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => rulesApi.recategoriseUncategorised(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }
