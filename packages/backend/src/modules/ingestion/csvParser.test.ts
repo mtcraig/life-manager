@@ -42,6 +42,19 @@ describe('parseAccountCsv — balance column', () => {
   });
 });
 
+describe('parseAccountCsv — single amount column', () => {
+  it('treats a blank amount cell as 0 instead of throwing', () => {
+    const csv = 'Date,Description,Amount\n2026-01-01,Annual fee waiver,\n';
+    const rows = parseAccountCsv(csv, baseMapping);
+    expect(rows[0]?.amount).toBe(0);
+  });
+
+  it('still throws when a mapped amount cell is present but unparseable', () => {
+    const csv = 'Date,Description,Amount\n2026-01-01,Coffee,not-a-number\n';
+    expect(() => parseAccountCsv(csv, baseMapping)).toThrow(/Cannot parse amount/);
+  });
+});
+
 describe('parseAccountCsv — debit/credit columns', () => {
   const debitCreditMapping: ColumnMapping = {
     date: 'Date',

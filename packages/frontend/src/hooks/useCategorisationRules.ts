@@ -62,3 +62,10 @@ export function useRecategoriseUncategorised() {
     mutationFn: () => rulesApi.recategoriseUncategorised(),
   });
 }
+
+/** The broad, slower re-evaluation — see reapplyAllRules in the backend service. */
+export function useReapplyAllRules() {
+  return useMutation({
+    mutationFn: () => rulesApi.reapplyAllRules(),
+  });
+}

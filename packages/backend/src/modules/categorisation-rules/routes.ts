@@ -41,4 +41,8 @@ export async function categorisationRuleRoutes(app: FastifyInstance) {
   app.post('/categorisation-rules/recategorise', async () => {
     return service.recategoriseUncategorised();
   });
+
+  app.post('/categorisation-rules/reapply-all', async () => {
+    return service.reapplyAllRules();
+  });
 }
