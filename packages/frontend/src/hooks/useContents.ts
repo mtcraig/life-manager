@@ -44,3 +44,15 @@ export function useDeleteContentsItem() {
     },
   });
 }
+
+export function useBulkImportContentsItems() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (csvContent: string) => contentsApi.bulkImportContentsItems(csvContent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CONTENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['areas'] });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}

@@ -2,6 +2,13 @@ import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { investments, investmentValuations } from '../../db/schema/investments';
 
+export interface ValuationWithInvestmentName {
+  investmentId: number;
+  investmentName: string;
+  asOfDate: string;
+  value: number;
+}
+
 export interface InvestmentRow {
   id: number;
   name: string;
@@ -42,6 +49,10 @@ export function listInvestments(includeArchived: boolean): InvestmentRow[] {
 
 export function getInvestmentById(id: number): InvestmentRow | undefined {
   return db.select().from(investments).where(eq(investments.id, id)).get();
+}
+
+export function getInvestmentByName(name: string): InvestmentRow | undefined {
+  return db.select().from(investments).where(eq(investments.name, name)).get();
 }
 
 export function insertInvestment(fields: InvestmentWriteFields): InvestmentRow {
@@ -137,6 +148,20 @@ export function deleteValuation(investmentId: number, valuationId: number): bool
     )
     .run();
   return result.changes > 0;
+}
+
+/** Every valuation across every investment, joined with the investment's name — feeds the holdings-by-month chart. */
+export function listAllValuationsWithNames(): ValuationWithInvestmentName[] {
+  return db
+    .select({
+      investmentId: investmentValuations.investmentId,
+      investmentName: investments.name,
+      asOfDate: investmentValuations.asOfDate,
+      value: investmentValuations.value,
+    })
+    .from(investmentValuations)
+    .innerJoin(investments, eq(investmentValuations.investmentId, investments.id))
+    .all();
 }
 
 /**

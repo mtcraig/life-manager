@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  bulkImportValuationsSchema,
   createLiabilitySchema,
   createValuationSchema,
   updateValuationSchema,
@@ -50,6 +51,11 @@ export async function liabilityRoutes(app: FastifyInstance) {
     return service.archiveLiability(id);
   });
 
+  app.post('/liabilities/:id/unarchive', async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    return service.unarchiveLiability(id);
+  });
+
   app.delete('/liabilities/:id', async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
     service.deleteLiability(id);
@@ -79,5 +85,10 @@ export async function liabilityRoutes(app: FastifyInstance) {
     const { id, valuationId } = valuationParamSchema.parse(request.params);
     service.deleteValuation(id, valuationId);
     reply.status(204);
+  });
+
+  app.post('/liabilities/bulk-import-valuations', async (request) => {
+    const input = bulkImportValuationsSchema.parse(request.body);
+    return service.bulkImportValuations(input.csvContent);
   });
 }

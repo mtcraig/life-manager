@@ -84,8 +84,10 @@ has its own **column mapping** telling the app which columns mean what:
 - **Amount**: either a single **signed amount column** (positive = money in, negative =
   money out), or **separate debit/credit columns** if your bank exports those instead.
 
-Once an account has a folder and column mapping configured, there are two ways to bring
-transactions in:
+As soon as you configure a folder and column mapping on an account (when adding it, or
+adding one to an existing account), the app immediately ingests whatever CSV files are
+already sitting in that folder — you don't need to click anything for that first import.
+From then on, there are two ways to bring in anything new:
 
 - **Manual mode**: export a CSV from your bank, save it into the account's configured
   folder, then click **Ingest now** next to the account in Settings. The app reads every
@@ -154,7 +156,7 @@ below for why this matters.
 ### Detail page
 
 The **Detail** page is a filterable, paginated table of every transaction across every
-account — filter by account, date range, or "Uncategorised only", and adjust a
+account — filter by account, vendor, date range, or "Uncategorised only", and adjust a
 transaction's category directly from the table.
 
 ### Accounts page
@@ -182,11 +184,25 @@ valuation is what counts toward its current value everywhere else in the app. Us
 and Delete next to Archive to fix a mistake or remove a holding entirely; the same
 buttons appear on each valuation in the expanded history.
 
-The same page also has **retirement projection scenarios**: give a scenario a name,
+At the top of the page, a **stacked bar chart** shows all your holdings' combined value
+by month, filterable by year (or "All time") using the selector next to the page title —
+the same selector also scopes each expanded holding's own valuation chart underneath.
+
+Already have valuation history in a spreadsheet? Click **Import** above the holdings list
+to paste it in as CSV instead of entering it one row at a time — headers
+`entityName,asOfDate,value,notes`, where `entityName` is the investment's name (created
+automatically if it doesn't already exist). Re-pasting the same CSV is safe: rows
+matching an existing valuation (same name + date) are skipped. The same Import affordance
+works the same way for Properties and Liabilities on the Wealth page, and for Contents.
+
+The same page also has **retirement projection scenarios**: give a scenario a short name,
 assumed annual growth rate, monthly contribution, and a retirement date (retirement age
-is stored for your reference but isn't used in the calculation — only the date is), and
-it projects your **total current investment value** forward using monthly-compounded
-growth. Add as many scenarios as you want to compare assumptions side by side.
+is stored for your reference but isn't used in the calculation — only the date is), plus
+an optional **Comments** field to explain the scenario in more detail (e.g. "retiring
+early with reduced contributions") — this and the assumptions you entered are shown
+alongside the projected result, so you can tell scenarios apart at a glance. It projects
+your **total current investment value** forward using monthly-compounded growth. Add as
+many scenarios as you want to compare assumptions side by side.
 
 ### Wealth page
 
@@ -200,6 +216,15 @@ If a property has an address, a map with a pin for it appears above the property
 once the address resolves to a location (this sends the address text to OpenStreetMap's
 free geocoding service — see the note at the top of [README.md](README.md)). Properties
 without a resolved location are simply left off the map.
+
+Both sections have an **Import** button for pasting valuation history as CSV — see
+[Investments](#investments) above for the format, which is identical here (the entity
+name is the property or liability's name).
+
+Liabilities have a **Show archived** checkbox next to Import — archiving hides something
+from the default view without deleting it (see [Key concepts](#5-key-concepts)), so this
+is how you find it again; an archived liability shows an **Unarchive** button in place of
+Archive.
 
 The net wealth formula:
 
@@ -216,19 +241,26 @@ current wealth, without permanently removing it the way Delete does.
 
 ### Insurance
 
-The **Insurance** page tracks policies — name, type, provider, coverage amount, premium
-and frequency, and renewal date. This is purely informational: insurance plans do **not**
-feed into the Wealth totals.
+The **Insurance** page tracks policies — name, type (Car, Home, Life, Health, Travel,
+Pet, or Other), provider, policy number, coverage amount, premium and frequency, and
+renewal date. Choosing **Car** as the type reveals a **Vehicle registration** field;
+choosing **Home** reveals a **Postcode** field instead — neither appears for other types.
+This is purely informational: insurance plans do **not** feed into the Wealth totals.
 
 ### Contents
 
 The **Contents** page tracks household item values, each tagged with an **Area** (room).
 Manage areas (add/delete) at the top of the page, then add items against them. The sum
 of every item's value feeds directly into Wealth's non-liquid assets — you'll see the
-Wealth page update as soon as you add or remove an item.
+Wealth page update as soon as you add or remove an item. Use the **Search** box and
+**Room** filter above the items list to find something in a long inventory.
 
 You can't delete an area that still has items assigned to it — you'll need to
 reassign or delete those items first.
+
+Already have a home inventory spreadsheet? Click **Import** above the items list to
+paste it in as CSV — headers `name,area,value,purchaseDate,notes`, where `area` is the
+room name (created automatically if it doesn't already exist).
 
 ### Energy
 
@@ -236,11 +268,11 @@ The **Energy** page tracks electricity, gas, and water meter readings, each with
 and unit (kWh, m³, litres). Two ways to add readings:
 
 - **One at a time** via the "Add reading" form.
-- **In bulk**, by pasting CSV text with the headers `meterType,readingDate,value,unit,notes`
-  into the "Bulk import" box. This is the app's own fixed format (not a bank-style
-  configurable mapping), so the headers must match exactly. Re-pasting the same CSV is
-  safe — rows matching an existing reading (same meter + date) are skipped rather than
-  duplicated.
+- **In bulk**, by clicking **Import** to reveal the paste-CSV box, then pasting CSV text
+  with the headers `meterType,readingDate,value,unit,notes`. This is the app's own fixed
+  format (not a bank-style configurable mapping), so the headers must match exactly.
+  Re-pasting the same CSV is safe — rows matching an existing reading (same meter + date)
+  are skipped rather than duplicated.
 
 Once you have at least two readings for a meter, a usage trend chart appears at the top
 of the page.
@@ -261,8 +293,10 @@ A few rules apply consistently across the app and are worth understanding:
 - **Archiving vs deleting.** Accounts, investments, properties, and liabilities can be
   either archived or deleted. Archive when you want to retire something but keep its
   history for reference — it stops counting toward current totals (Wealth, balances,
-  etc) but everything about it is preserved. Delete when you want it and its valuation
-  history gone permanently (e.g. it was added by mistake) — this cannot be undone.
+  etc) but everything about it is preserved, and archiving is reversible (on the
+  Liabilities section, tick **Show archived** to find it again and click **Unarchive**).
+  Delete when you want it and its valuation history gone permanently (e.g. it was added
+  by mistake) — this cannot be undone.
 - **"Latest valuation" drives current value.** For investments, properties, and
   liabilities, whatever you enter as the most recent valuation (by date) is what's used
   everywhere — Wealth totals, the holding's displayed current value, and projections.
@@ -293,11 +327,10 @@ over.
   path exists and its column mapping headers exactly match your CSV's actual column
   names (case-sensitive). The error message names the missing column.
 - **A watched folder isn't picking up new files** — confirm the account's ingestion mode
-  is set to `watched` (not `manual`) and the folder path is correct; only files saved
-  *after* watching starts are picked up automatically. Files already sitting in the
-  folder beforehand (e.g. from before you switched the account to watched mode) won't be
-  auto-ingested — click **Ingest now** once to pick those up (it works regardless of
-  ingestion mode); anything saved into the folder after that is automatic.
+  is set to `watched` (not `manual`) and the folder path is correct. Files already
+  sitting in the folder when you configure it are ingested immediately; anything saved
+  in after that is picked up automatically too. If something still looks missing, click
+  **Ingest now** to re-scan the folder (works regardless of ingestion mode).
 - **A transaction stays Uncategorised after adding a matching rule** — adding a rule
   automatically re-applies it to existing transactions as a background job; give it a
   moment (there's a progress bar). If it's still Uncategorised once that finishes, the

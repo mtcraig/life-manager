@@ -16,6 +16,10 @@ export function getAreaById(id: number): AreaRow | undefined {
   return db.select().from(areas).where(eq(areas.id, id)).get();
 }
 
+export function getAreaByName(name: string): AreaRow | undefined {
+  return db.select().from(areas).where(eq(areas.name, name)).get();
+}
+
 export function insertArea(name: string): AreaRow {
   return db.insert(areas).values({ name, createdAt: Date.now() }).returning().get();
 }

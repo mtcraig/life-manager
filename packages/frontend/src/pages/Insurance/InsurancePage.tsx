@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { CreateInsurancePlanInput, InsurancePlanDto, PremiumFrequency } from '@life-manager/shared';
-import { PREMIUM_FREQUENCIES } from '@life-manager/shared';
+import type { CreateInsurancePlanInput, InsurancePlanDto, InsuranceType, PremiumFrequency } from '@life-manager/shared';
+import { INSURANCE_TYPES, PREMIUM_FREQUENCIES } from '@life-manager/shared';
 import {
   useCancelInsurancePlan,
   useCreateInsurancePlan,
@@ -38,13 +38,16 @@ const STATUS_TONE_CLASSES: Record<InsuranceStatus, string> = {
 function AddInsurancePlanForm() {
   const createPlan = useCreateInsurancePlan();
   const [name, setName] = useState('');
-  const [type, setType] = useState('');
+  const [type, setType] = useState<InsuranceType | ''>('');
   const [coverageAmount, setCoverageAmount] = useState('');
   const [premiumAmount, setPremiumAmount] = useState('');
   const [premiumFrequency, setPremiumFrequency] = useState<PremiumFrequency>('monthly');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [renewalDate, setRenewalDate] = useState('');
   const [provider, setProvider] = useState('');
+  const [policyNumber, setPolicyNumber] = useState('');
+  const [vehicleRegistration, setVehicleRegistration] = useState('');
+  const [postcode, setPostcode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: React.FormEvent) {
@@ -52,13 +55,16 @@ function AddInsurancePlanForm() {
     setError(null);
     const input: CreateInsurancePlanInput = {
       name,
-      type,
+      type: type as InsuranceType,
       coverageAmount: Math.round(Number(coverageAmount) * 100),
       premiumAmount: Math.round(Number(premiumAmount) * 100),
       premiumFrequency,
       effectiveDate,
       renewalDate,
       provider: provider.trim() || undefined,
+      policyNumber: policyNumber.trim() || undefined,
+      vehicleRegistration: type === 'car' ? vehicleRegistration.trim() || undefined : undefined,
+      postcode: type === 'home' ? postcode.trim() || undefined : undefined,
     };
     createPlan.mutate(input, {
       onSuccess: () => {
@@ -70,6 +76,9 @@ function AddInsurancePlanForm() {
         setEffectiveDate('');
         setRenewalDate('');
         setProvider('');
+        setPolicyNumber('');
+        setVehicleRegistration('');
+        setPostcode('');
       },
       onError: (err) => setError(err instanceof Error ? err.message : String(err)),
     });
@@ -88,13 +97,21 @@ function AddInsurancePlanForm() {
       </label>
       <label className="text-sm text-slate-700 dark:text-slate-300">
         Type
-        <input
+        <select
           required
           value={type}
-          onChange={(e) => setType(e.target.value)}
-          placeholder="e.g. home, car, life"
+          onChange={(e) => setType(e.target.value as InsuranceType)}
           className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-        />
+        >
+          <option value="" disabled>
+            Select a type
+          </option>
+          {INSURANCE_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {humanizeEnumValue(t)}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="text-sm text-slate-700 dark:text-slate-300">
         Provider (optional)
@@ -104,6 +121,34 @@ function AddInsurancePlanForm() {
           className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Policy number (optional)
+        <input
+          value={policyNumber}
+          onChange={(e) => setPolicyNumber(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      {type === 'car' && (
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Vehicle registration
+          <input
+            value={vehicleRegistration}
+            onChange={(e) => setVehicleRegistration(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+      )}
+      {type === 'home' && (
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Postcode
+          <input
+            value={postcode}
+            onChange={(e) => setPostcode(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+      )}
       <label className="text-sm text-slate-700 dark:text-slate-300">
         Coverage amount (£)
         <input
@@ -199,6 +244,9 @@ function InsurancePlansList() {
                 {plan.premiumFrequency === 'monthly' ? 'mo' : 'yr'} · Effective {plan.effectiveDate} · Renews{' '}
                 {plan.renewalDate}
                 {plan.provider ? ` · ${plan.provider}` : ''}
+                {plan.policyNumber ? ` · Policy ${plan.policyNumber}` : ''}
+                {plan.vehicleRegistration ? ` · ${plan.vehicleRegistration}` : ''}
+                {plan.postcode ? ` · ${plan.postcode}` : ''}
               </div>
             </div>
             <div className="flex items-center gap-2">

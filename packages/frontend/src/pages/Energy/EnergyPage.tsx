@@ -9,7 +9,7 @@ import {
 } from '../../hooks/useEnergy.js';
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 const DEFAULT_UNIT_BY_METER: Record<MeterType, EnergyUnit> = {
   electricity: 'kWh',
@@ -236,6 +236,8 @@ function UsageCharts() {
 }
 
 export function EnergyPage() {
+  const [showImport, setShowImport] = useState(false);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Energy</h1>
@@ -248,8 +250,13 @@ export function EnergyPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Bulk import (CSV)</h2>
-        <BulkImportForm />
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bulk import (CSV)</h2>
+          <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
+            {showImport ? 'Hide import' : 'Import'}
+          </button>
+        </div>
+        {showImport && <BulkImportForm />}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">

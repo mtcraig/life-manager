@@ -1,5 +1,6 @@
 import type {
   AccountDto,
+  AccountMutationResultDto,
   CreateAccountInput,
   IngestStartedDto,
   UpdateAccountInput,
@@ -11,14 +12,14 @@ export function fetchAccounts() {
 }
 
 export function createAccount(input: CreateAccountInput) {
-  return apiFetch<AccountDto>('/accounts', {
+  return apiFetch<AccountMutationResultDto>('/accounts', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
 export function updateAccount(id: number, input: UpdateAccountInput) {
-  return apiFetch<AccountDto>(`/accounts/${id}`, {
+  return apiFetch<AccountMutationResultDto>(`/accounts/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

@@ -4,6 +4,7 @@ import {
   categorySummaryQuerySchema,
   moneyFlowQuerySchema,
   topTransactionsQuerySchema,
+  transactionDateBoundsQuerySchema,
 } from '@life-manager/shared';
 import * as service from './service';
 
@@ -31,5 +32,10 @@ export async function analyticsRoutes(app: FastifyInstance) {
   app.get('/analytics/top-transactions', async (request) => {
     const query = topTransactionsQuerySchema.parse(request.query);
     return service.getTopTransactions(query);
+  });
+
+  app.get('/analytics/transaction-date-bounds', async (request) => {
+    const query = transactionDateBoundsQuerySchema.parse(request.query);
+    return service.getTransactionDateBounds(query);
   });
 }

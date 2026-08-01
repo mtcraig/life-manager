@@ -2,12 +2,14 @@ import { useState } from 'react';
 import type { CreateContentsItemInput } from '@life-manager/shared';
 import { useAreas, useCreateArea, useDeleteArea } from '../../hooks/useAreas.js';
 import {
+  useBulkImportContentsItems,
   useContentsItems,
   useCreateContentsItem,
   useDeleteContentsItem,
 } from '../../hooks/useContents.js';
+import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 function AreaManager() {
   const { data: areas, isPending, isError } = useAreas();
@@ -181,6 +183,8 @@ function ContentsItemsList() {
   const { data: areas } = useAreas();
   const { data: items, isPending, isError } = useContentsItems();
   const deleteItem = useDeleteContentsItem();
+  const [search, setSearch] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
 
   const areaNameById = new Map((areas ?? []).map((area) => [area.id, area.name]));
 
@@ -190,12 +194,46 @@ function ContentsItemsList() {
     return <p className="text-sm text-slate-500">No contents items yet — add one above.</p>;
   }
 
-  const total = items.reduce((sum, item) => sum + item.value, 0);
+  const filteredItems = items.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesArea = areaFilter === '' || item.areaId === Number(areaFilter);
+    return matchesSearch && matchesArea;
+  });
+  const total = filteredItems.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap items-end gap-3">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Search
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Item name"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Room
+          <select
+            value={areaFilter}
+            onChange={(e) => setAreaFilter(e.target.value)}
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          >
+            <option value="">All rooms</option>
+            {areas?.map((area) => (
+              <option key={area.id} value={area.id}>
+                {area.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {filteredItems.length === 0 && (
+        <p className="text-sm text-slate-500">No items match these filters.</p>
+      )}
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <li key={item.id} className="flex items-center justify-between py-3">
             <div>
               <div className="font-medium text-slate-900 dark:text-slate-100">{item.name}</div>
@@ -225,6 +263,9 @@ function ContentsItemsList() {
 }
 
 export function ContentsPage() {
+  const [showImport, setShowImport] = useState(false);
+  const bulkImport = useBulkImportContentsItems();
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Contents</h1>
@@ -237,7 +278,26 @@ export function ContentsPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Items</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Items</h2>
+          <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
+            {showImport ? 'Hide import' : 'Import'}
+          </button>
+        </div>
+        {showImport && (
+          <div className="mb-4">
+            <BulkImportCsvForm
+              mutation={bulkImport}
+              headerHint="name,area,value,purchaseDate,notes"
+              helpText="A room that doesn't already exist is created automatically."
+              renderResult={(r) =>
+                `Imported ${r.itemsCreated} item${r.itemsCreated === 1 ? '' : 's'}${
+                  r.areasCreated > 0 ? `, creating ${r.areasCreated} new ${r.areasCreated === 1 ? 'room' : 'rooms'}` : ''
+                }.`
+              }
+            />
+          </div>
+        )}
         <ContentsItemsList />
       </section>
     </div>

@@ -1,4 +1,5 @@
 import type {
+  BulkImportValuationsResultDto,
   CreatePropertyInput,
   CreateValuationInput,
   PropertyDto,
@@ -57,4 +58,11 @@ export function updatePropertyValuation(
 
 export function deletePropertyValuation(propertyId: number, valuationId: number) {
   return apiFetch<void>(`/properties/${propertyId}/valuations/${valuationId}`, { method: 'DELETE' });
+}
+
+export function bulkImportPropertyValuations(csvContent: string) {
+  return apiFetch<BulkImportValuationsResultDto>('/properties/bulk-import-valuations', {
+    method: 'POST',
+    body: JSON.stringify({ csvContent }),
+  });
 }

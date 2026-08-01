@@ -3,10 +3,17 @@ import { useQueries } from '@tanstack/react-query';
 import type { AccountDto } from '@life-manager/shared';
 import { BalanceTrendChart } from '../../components/charts/BalanceTrendChart.js';
 import { CategorySpendingChart } from '../../components/charts/CategorySpendingChart.js';
+import { YearFilter as YearFilterControl } from '../../components/YearFilter.js';
 import { useAccounts } from '../../hooks/useAccounts.js';
-import { useAccountBalanceTrend, useCategorySummaryByMonth } from '../../hooks/useAnalytics.js';
+import {
+  useAccountBalanceTrend,
+  useCategorySummaryByMonth,
+  useTransactionDateBounds,
+} from '../../hooks/useAnalytics.js';
 import { fetchAccountBalanceTrend } from '../../api/analytics.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import type { YearFilterValue } from '../../lib/yearFilter.js';
+import { dateRangeForYear } from '../../lib/yearFilter.js';
 
 const INSTITUTION_CLASS = 'text-indigo-600 dark:text-indigo-400 font-medium';
 
@@ -17,46 +24,7 @@ function accountBalanceClass(type: AccountDto['type'], balance: number): string 
   return balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 }
 
-const YEAR_FILTER_WINDOW = 4;
-
-type YearFilter = number | 'all';
-
-function toIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/** dateTo caps at today for the current year rather than Dec 31, matching the rest of the app's YTD convention. */
-function dateRangeForYear(selectedYear: YearFilter): { dateFrom?: string; dateTo?: string } {
-  if (selectedYear === 'all') return {};
-  const currentYear = new Date().getFullYear();
-  const dateTo = selectedYear === currentYear ? toIsoDate(new Date()) : `${selectedYear}-12-31`;
-  return { dateFrom: `${selectedYear}-01-01`, dateTo };
-}
-
-function YearSelect({ selectedYear, onChange }: { selectedYear: YearFilter; onChange: (year: YearFilter) => void }) {
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: YEAR_FILTER_WINDOW }, (_, i) => currentYear - i);
-  return (
-    <label className="text-sm text-slate-700 dark:text-slate-300">
-      Year{' '}
-      <select
-        value={selectedYear}
-        onChange={(e) => onChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-        className="ml-1 rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-      >
-        <option value="all">All time</option>
-        {yearOptions.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
+type YearFilter = YearFilterValue;
 
 function CategorySpendingSection({
   accountId,
@@ -209,16 +177,18 @@ function AccountDetail({
 
 export function AccountsPage() {
   const { data: accounts, isPending, isError } = useAccounts();
+  const { data: dateBounds } = useTransactionDateBounds();
   const [viewMode, setViewMode] = useState<'all' | 'account'>('all');
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(undefined);
   const [selectedYear, setSelectedYear] = useState<YearFilter>(new Date().getFullYear());
   const selectedAccount = accounts?.find((a) => a.id === selectedAccountId);
+  const earliestYear = dateBounds?.earliestDate ? Number(dateBounds.earliestDate.slice(0, 4)) : undefined;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Accounts</h1>
-        <YearSelect selectedYear={selectedYear} onChange={setSelectedYear} />
+        <YearFilterControl selectedYear={selectedYear} onChange={setSelectedYear} earliestYear={earliestYear} />
       </div>
 
       {isPending && <p className="text-sm text-slate-500">Loading…</p>}

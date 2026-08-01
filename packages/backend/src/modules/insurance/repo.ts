@@ -13,6 +13,9 @@ export interface InsurancePlanRow {
   renewalDate: string;
   provider: string | null;
   notes: string | null;
+  policyNumber: string | null;
+  vehicleRegistration: string | null;
+  postcode: string | null;
   cancelledAt: number | null;
   createdAt: number;
   updatedAt: number;
@@ -28,6 +31,9 @@ export interface InsurancePlanWriteFields {
   renewalDate: string;
   provider: string | null;
   notes: string | null;
+  policyNumber: string | null;
+  vehicleRegistration: string | null;
+  postcode: string | null;
 }
 
 export function listInsurancePlans(): InsurancePlanRow[] {

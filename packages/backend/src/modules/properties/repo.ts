@@ -44,6 +44,10 @@ export function listProperties(includeArchived: boolean): PropertyRow[] {
   return db.select().from(properties).where(isNull(properties.archivedAt)).all();
 }
 
+export function getPropertyByName(name: string): PropertyRow | undefined {
+  return db.select().from(properties).where(eq(properties.name, name)).get();
+}
+
 export function getPropertyById(id: number): PropertyRow | undefined {
   return db.select().from(properties).where(eq(properties.id, id)).get();
 }

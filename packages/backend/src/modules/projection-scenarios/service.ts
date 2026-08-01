@@ -18,6 +18,7 @@ function toDto(row: ProjectionScenarioRow): ProjectionScenarioDto {
     monthlyContribution: row.monthlyContribution,
     retirementAge: row.retirementAge,
     retirementDate: row.retirementDate,
+    comments: row.comments,
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
   };
@@ -50,6 +51,7 @@ export function createScenario(input: CreateProjectionScenarioInput): Projection
     monthlyContribution: input.monthlyContribution,
     retirementAge: input.retirementAge ?? null,
     retirementDate: input.retirementDate ?? null,
+    comments: input.comments ?? null,
   });
   return toDto(row);
 }
@@ -69,6 +71,7 @@ export function updateScenario(
     }),
     ...(input.retirementAge !== undefined && { retirementAge: input.retirementAge ?? null }),
     ...(input.retirementDate !== undefined && { retirementDate: input.retirementDate ?? null }),
+    ...(input.comments !== undefined && { comments: input.comments ?? null }),
   });
   return toDto(row as NonNullable<typeof row>);
 }

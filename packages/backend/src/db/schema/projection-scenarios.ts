@@ -7,6 +7,7 @@ export const projectionScenarios = sqliteTable('projection_scenarios', {
   monthlyContribution: integer('monthly_contribution').notNull().default(0),
   retirementAge: integer('retirement_age'),
   retirementDate: text('retirement_date'),
+  comments: text('comments'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

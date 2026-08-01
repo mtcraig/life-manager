@@ -9,6 +9,7 @@ export interface ProjectionScenarioRow {
   monthlyContribution: number;
   retirementAge: number | null;
   retirementDate: string | null;
+  comments: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -19,6 +20,7 @@ export interface ProjectionScenarioWriteFields {
   monthlyContribution: number;
   retirementAge: number | null;
   retirementDate: string | null;
+  comments: string | null;
 }
 
 export function listScenarios(): ProjectionScenarioRow[] {

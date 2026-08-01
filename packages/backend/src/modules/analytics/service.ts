@@ -8,6 +8,8 @@ import type {
   MoneyFlowResultDto,
   TopTransactionsQuery,
   TopTransactionsResultDto,
+  TransactionDateBoundsDto,
+  TransactionDateBoundsQuery,
 } from '@life-manager/shared';
 import { computeBalanceTrend } from '../../lib/calculations/balanceTrend';
 import { groupCategorySummary } from '../../lib/calculations/categorySummary';
@@ -51,4 +53,8 @@ export function getTopTransactions(query: TopTransactionsQuery): TopTransactions
     topIncome: transactionsRepo.listTopTransactionsByAmount({ ...base, direction: 'in' }),
     topExpenses: transactionsRepo.listTopTransactionsByAmount({ ...base, direction: 'out' }),
   };
+}
+
+export function getTransactionDateBounds(query: TransactionDateBoundsQuery): TransactionDateBoundsDto {
+  return { earliestDate: transactionsRepo.getEarliestTransactionDate(query.accountId) };
 }

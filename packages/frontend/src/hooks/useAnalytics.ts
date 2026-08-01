@@ -4,6 +4,7 @@ import type {
   CategorySummaryQuery,
   MoneyFlowQuery,
   TopTransactionsQuery,
+  TransactionDateBoundsQuery,
 } from '@life-manager/shared';
 import {
   fetchAccountBalanceTrend,
@@ -11,6 +12,7 @@ import {
   fetchCategorySummaryByMonth,
   fetchMoneyFlow,
   fetchTopTransactions,
+  fetchTransactionDateBounds,
 } from '../api/analytics.js';
 
 export function useMoneyFlow(query: Partial<MoneyFlowQuery>) {
@@ -46,5 +48,12 @@ export function useTopTransactions(query: Partial<TopTransactionsQuery>) {
   return useQuery({
     queryKey: ['analytics', 'top-transactions', query],
     queryFn: () => fetchTopTransactions(query),
+  });
+}
+
+export function useTransactionDateBounds(query: Partial<TransactionDateBoundsQuery> = {}) {
+  return useQuery({
+    queryKey: ['analytics', 'transaction-date-bounds', query],
+    queryFn: () => fetchTransactionDateBounds(query),
   });
 }

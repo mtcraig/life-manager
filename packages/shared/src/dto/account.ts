@@ -40,6 +40,12 @@ export interface AccountDto {
   updatedAt: string;
 }
 
+/** Returned by create/update when a folder+mapping are configured, so the caller can
+ *  immediately show progress for the auto-triggered initial ingest — see accounts/service.ts. */
+export interface AccountMutationResultDto extends AccountDto {
+  ingestJobId: number | null;
+}
+
 export const createAccountSchema = z.object({
   name: z.string().min(1),
   type: z.enum(ACCOUNT_TYPES),

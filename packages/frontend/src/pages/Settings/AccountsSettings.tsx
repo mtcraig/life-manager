@@ -272,7 +272,15 @@ function ingestResultMessage(result: IngestResultDto): string {
   return `${result.rowsIngested} ingested`;
 }
 
-function AccountEditRow({ account, onDone }: { account: AccountDto; onDone: () => void }) {
+function AccountEditRow({
+  account,
+  onDone,
+  onIngestStarted,
+}: {
+  account: AccountDto;
+  onDone: () => void;
+  onIngestStarted: (jobId: number) => void;
+}) {
   const updateAccount = useUpdateAccount();
   const [draft, setDraft] = useState<AccountFormDraft>(() => draftFromAccount(account));
   const [error, setError] = useState<string | null>(null);
@@ -283,7 +291,10 @@ function AccountEditRow({ account, onDone }: { account: AccountDto; onDone: () =
     updateAccount.mutate(
       { id: account.id, input: buildAccountInput(draft) },
       {
-        onSuccess: () => onDone(),
+        onSuccess: (result) => {
+          if (result.ingestJobId !== null) onIngestStarted(result.ingestJobId);
+          onDone();
+        },
         onError: (err) => setError(err instanceof Error ? err.message : String(err)),
       },
     );
@@ -344,7 +355,14 @@ export function AccountsSettings() {
     setFormError(null);
 
     createAccount.mutate(buildAccountInput(draft), {
-      onSuccess: () => setDraft(EMPTY_DRAFT),
+      onSuccess: (result) => {
+        setDraft(EMPTY_DRAFT);
+        if (result.ingestJobId !== null) {
+          setIngestResults(null);
+          setIngestEmptyMessage(null);
+          setIngestJobId(result.ingestJobId);
+        }
+      },
       onError: (error) => setFormError(error instanceof Error ? error.message : String(error)),
     });
   }
@@ -409,7 +427,16 @@ export function AccountsSettings() {
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts?.map((account: AccountDto) =>
             editingId === account.id ? (
-              <AccountEditRow key={account.id} account={account} onDone={() => setEditingId(null)} />
+              <AccountEditRow
+                key={account.id}
+                account={account}
+                onDone={() => setEditingId(null)}
+                onIngestStarted={(jobId) => {
+                  setIngestResults(null);
+                  setIngestEmptyMessage(null);
+                  setIngestJobId(jobId);
+                }}
+              />
             ) : (
               <li key={account.id} className="flex items-center justify-between py-2">
                 <div>

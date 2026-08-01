@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { createContentsItemSchema, updateContentsItemSchema } from '@life-manager/shared';
+import {
+  bulkImportContentsItemsSchema,
+  createContentsItemSchema,
+  updateContentsItemSchema,
+} from '@life-manager/shared';
 import { z } from 'zod';
 import * as service from './service';
 
@@ -27,5 +31,10 @@ export async function contentsRoutes(app: FastifyInstance) {
     const { id } = idParamSchema.parse(request.params);
     service.deleteContentsItem(id);
     reply.status(204);
+  });
+
+  app.post('/contents-items/bulk-import', async (request) => {
+    const input = bulkImportContentsItemsSchema.parse(request.body);
+    return service.bulkImportContentsItems(input.csvContent);
   });
 }

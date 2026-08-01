@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  bulkImportValuationsSchema,
   createInvestmentSchema,
   createValuationSchema,
   updateValuationSchema,
@@ -79,5 +80,14 @@ export async function investmentRoutes(app: FastifyInstance) {
     const { id, valuationId } = valuationParamSchema.parse(request.params);
     service.deleteValuation(id, valuationId);
     reply.status(204);
+  });
+
+  app.post('/investments/bulk-import-valuations', async (request) => {
+    const input = bulkImportValuationsSchema.parse(request.body);
+    return service.bulkImportValuations(input.csvContent);
+  });
+
+  app.get('/investments/holdings-by-month', async () => {
+    return service.getHoldingsByMonth();
   });
 }
