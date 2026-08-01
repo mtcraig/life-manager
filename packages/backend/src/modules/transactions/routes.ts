@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { transactionListQuerySchema, updateTransactionCategorySchema } from '@life-manager/shared';
+import {
+  transactionExportQuerySchema,
+  transactionListQuerySchema,
+  updateTransactionCategorySchema,
+} from '@life-manager/shared';
 import { z } from 'zod';
 import * as service from './service';
 
@@ -9,6 +13,16 @@ export async function transactionRoutes(app: FastifyInstance) {
   app.get('/transactions', async (request) => {
     const query = transactionListQuerySchema.parse(request.query);
     return service.listTransactions(query);
+  });
+
+  app.get('/transactions/export', async (request, reply) => {
+    const query = transactionExportQuerySchema.parse(request.query);
+    const csv = service.exportTransactionsCsv(query);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="transactions-export-${timestamp}.csv"`)
+      .send(csv);
   });
 
   app.patch('/transactions/:id', async (request) => {

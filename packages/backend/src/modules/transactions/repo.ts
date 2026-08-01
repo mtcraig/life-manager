@@ -1,8 +1,10 @@
 import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
-import type { TransactionListQuery } from '@life-manager/shared';
+import type { TransactionExportQuery, TransactionListQuery } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { transactions } from '../../db/schema/transactions';
 import { categories } from '../../db/schema/categories';
+import { accounts } from '../../db/schema/accounts';
+import { vendors } from '../../db/schema/vendors';
 
 export interface TransactionRow {
   id: number;
@@ -38,7 +40,7 @@ export interface NewTransactionFields {
   balanceAfter: number | null;
 }
 
-function buildFilters(query: TransactionListQuery) {
+function buildFilters(query: TransactionListQuery | TransactionExportQuery) {
   const conditions = [];
   if (query.accountId !== undefined) conditions.push(eq(transactions.accountId, query.accountId));
   if (query.dateFrom !== undefined) conditions.push(gte(transactions.date, query.dateFrom));
@@ -72,6 +74,36 @@ export function listTransactions(query: TransactionListQuery): {
     .get() as { count: number };
 
   return { items, total: count };
+}
+
+export interface ExportTransactionRow {
+  date: string;
+  accountName: string | null;
+  description: string;
+  categoryName: string | null;
+  vendorName: string | null;
+  amount: number;
+}
+
+/** Every transaction matching the given filters, with names joined in — no pagination, since an export covers the whole filtered set. */
+export function listAllTransactionsForExport(query: TransactionExportQuery): ExportTransactionRow[] {
+  const where = buildFilters(query);
+  return db
+    .select({
+      date: transactions.date,
+      accountName: accounts.name,
+      description: transactions.description,
+      categoryName: categories.name,
+      vendorName: vendors.name,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .leftJoin(vendors, eq(transactions.vendorId, vendors.id))
+    .where(where)
+    .orderBy(desc(transactions.date), desc(transactions.id))
+    .all();
 }
 
 /** Returns the subset of the given dedupe hashes that already exist for this account. */

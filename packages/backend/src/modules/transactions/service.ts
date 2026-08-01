@@ -1,10 +1,12 @@
 import type {
   TransactionDto,
+  TransactionExportQuery,
   TransactionListQuery,
   TransactionListResultDto,
   UpdateTransactionCategoryInput,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
+import { toCsvRow } from '../../lib/csv';
 import * as repo from './repo';
 import type { TransactionRow } from './repo';
 
@@ -34,6 +36,23 @@ export function listTransactions(query: TransactionListQuery): TransactionListRe
     page: query.page,
     pageSize: query.pageSize,
   };
+}
+
+/** CSV of every transaction matching the given filters (not just the current page), for the Detail page's Export button. */
+export function exportTransactionsCsv(query: TransactionExportQuery): string {
+  const rows = repo.listAllTransactionsForExport(query);
+  let csv = toCsvRow(['Date', 'Account', 'Description', 'Category', 'Vendor', 'Amount']);
+  for (const row of rows) {
+    csv += toCsvRow([
+      row.date,
+      row.accountName,
+      row.description,
+      row.categoryName ?? 'Uncategorised',
+      row.vendorName,
+      (row.amount / 100).toFixed(2),
+    ]);
+  }
+  return csv;
 }
 
 export function updateTransactionCategory(

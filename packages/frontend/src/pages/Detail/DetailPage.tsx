@@ -3,7 +3,9 @@ import { useAccounts } from '../../hooks/useAccounts.js';
 import { useCategories } from '../../hooks/useCategories.js';
 import { useVendors } from '../../hooks/useVendors.js';
 import { useTransactions, useUpdateTransactionCategory } from '../../hooks/useTransactions.js';
+import { transactionExportUrl } from '../../api/transactions.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 export function DetailPage() {
   const { data: accounts } = useAccounts();
@@ -106,6 +108,18 @@ export function DetailPage() {
           />
           Uncategorised only
         </label>
+        <a
+          href={transactionExportUrl({
+            accountId: accountId ? Number(accountId) : undefined,
+            vendorId: vendorId ? Number(vendorId) : undefined,
+            dateFrom: dateFrom || undefined,
+            dateTo: dateTo || undefined,
+            uncategorisedOnly: uncategorisedOnly || undefined,
+          })}
+          className={`${BTN_PRIMARY} ml-auto`}
+        >
+          Export CSV
+        </a>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
