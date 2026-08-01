@@ -6,6 +6,7 @@ import type {
   UpdateContentsItemInput,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
+import { normalizeCsvHeaders } from '../../lib/csv';
 import * as areasRepo from '../areas/repo';
 import * as repo from './repo';
 import type { ContentsItemRow } from './repo';
@@ -68,7 +69,7 @@ export function deleteContentsItem(id: number): void {
  */
 export function bulkImportContentsItems(csvContent: string): BulkImportContentsItemsResultDto {
   const records: Record<string, string>[] = parse(csvContent, {
-    columns: true,
+    columns: normalizeCsvHeaders(['name', 'area', 'value', 'purchaseDate', 'notes']),
     skip_empty_lines: true,
     trim: true,
   });

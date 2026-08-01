@@ -6,6 +6,7 @@ import type {
   EnergyReadingDto,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
+import { normalizeCsvHeaders } from '../../lib/csv';
 import * as repo from './repo';
 import type { EnergyReadingRow } from './repo';
 
@@ -59,7 +60,7 @@ export function deleteEnergyReading(id: number): void {
  */
 export function bulkImportEnergyReadings(csvContent: string): BulkImportEnergyReadingsResultDto {
   const records: Record<string, string>[] = parse(csvContent, {
-    columns: true,
+    columns: normalizeCsvHeaders(['meterType', 'readingDate', 'value', 'unit', 'notes']),
     skip_empty_lines: true,
     trim: true,
   });

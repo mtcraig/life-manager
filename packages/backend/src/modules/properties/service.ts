@@ -8,6 +8,7 @@ import type {
   ValuationDto,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
+import { normalizeCsvHeaders } from '../../lib/csv';
 import { geocodeAddress } from './geocode';
 import * as repo from './repo';
 import type { PropertyRow, ValuationRow } from './repo';
@@ -163,7 +164,7 @@ export function deleteValuation(propertyId: number, valuationId: number): void {
  */
 export function bulkImportValuations(csvContent: string): BulkImportValuationsResultDto {
   const records: Record<string, string>[] = parse(csvContent, {
-    columns: true,
+    columns: normalizeCsvHeaders(['entityName', 'asOfDate', 'value', 'notes']),
     skip_empty_lines: true,
     trim: true,
   });

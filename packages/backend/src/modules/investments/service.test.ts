@@ -67,6 +67,13 @@ describe('bulkImportValuations', () => {
     expect(result).toEqual({ valuationsCreated: 0, entitiesCreated: 0 });
   });
 
+  it('matches headers case-insensitively', () => {
+    const result = bulkImportValuations('entityName,asofDate,VALUE,notes\nISA,2026-01-01,1000.50,opening');
+
+    expect(result).toEqual({ valuationsCreated: 1, entitiesCreated: 1 });
+    expect(valuationsByKey.get('1:2026-01-01')).toMatchObject({ value: 100050, notes: 'opening' });
+  });
+
   it('throws on a row missing a required column', () => {
     expect(() => bulkImportValuations('entityName,asOfDate,value\nISA,2026-01-01,\n')).toThrow(
       /missing required column/,
