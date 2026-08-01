@@ -29,6 +29,10 @@ export const transactionListQuerySchema = z.object({
 });
 export type TransactionListQuery = z.infer<typeof transactionListQuerySchema>;
 
+/** Same filters as the paginated list, minus page/pageSize — the export always covers every matching row. */
+export const transactionExportQuerySchema = transactionListQuerySchema.omit({ page: true, pageSize: true });
+export type TransactionExportQuery = z.infer<typeof transactionExportQuerySchema>;
+
 export interface TransactionListResultDto {
   items: TransactionDto[];
   total: number;
