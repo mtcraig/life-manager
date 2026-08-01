@@ -1,4 +1,5 @@
 import type {
+  BulkImportValuationsResultDto,
   CreateLiabilityInput,
   CreateValuationInput,
   LiabilityDto,
@@ -29,6 +30,10 @@ export function archiveLiability(id: number) {
   return apiFetch<LiabilityDto>(`/liabilities/${id}/archive`, { method: 'POST' });
 }
 
+export function unarchiveLiability(id: number) {
+  return apiFetch<LiabilityDto>(`/liabilities/${id}/unarchive`, { method: 'POST' });
+}
+
 export function deleteLiability(id: number) {
   return apiFetch<void>(`/liabilities/${id}`, { method: 'DELETE' });
 }
@@ -57,4 +62,11 @@ export function updateLiabilityValuation(
 
 export function deleteLiabilityValuation(liabilityId: number, valuationId: number) {
   return apiFetch<void>(`/liabilities/${liabilityId}/valuations/${valuationId}`, { method: 'DELETE' });
+}
+
+export function bulkImportLiabilityValuations(csvContent: string) {
+  return apiFetch<BulkImportValuationsResultDto>('/liabilities/bulk-import-valuations', {
+    method: 'POST',
+    body: JSON.stringify({ csvContent }),
+  });
 }

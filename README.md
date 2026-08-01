@@ -95,11 +95,14 @@ backing it up, if you want to keep it).
 
 Each account is configured for either **manual** ingestion (click "Ingest now" in
 Settings → Accounts after dropping a CSV export somewhere) or a **watched folder**
-(any CSV file placed in the configured folder is picked up automatically). Column
-mapping (which CSV columns are date/description/amount) is configured per account,
-since bank export formats vary by institution. CSV files are read tolerantly of
-encoding — UTF-8 (with or without a BOM) and Windows-1252/Latin-1 exports (common for
-UK bank statements containing "£") are both handled automatically.
+(any CSV file placed in the configured folder is picked up automatically). As soon as
+a folder and column mapping are configured on an account — whether at creation or
+added later — any CSV files already sitting in that folder are ingested immediately,
+not just ones dropped in afterward. Column mapping (which CSV columns are
+date/description/amount) is configured per account, since bank export formats vary by
+institution. CSV files are read tolerantly of encoding — UTF-8 (with or without a BOM)
+and Windows-1252/Latin-1 exports (common for UK bank statements containing "£") are
+both handled automatically.
 
 Ingesting a large file, or adding/editing a categorisation rule while you have a lot of
 transaction history, re-matches every affected transaction against your rule set —

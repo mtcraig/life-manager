@@ -1,11 +1,18 @@
 import { useState } from 'react';
-import type { CreateInvestmentInput, CreateProjectionScenarioInput } from '@life-manager/shared';
+import type {
+  CreateInvestmentInput,
+  CreateProjectionScenarioInput,
+  ProjectionScenarioDto,
+  ValuationDto,
+} from '@life-manager/shared';
 import {
   useArchiveInvestment,
   useAddInvestmentValuation,
+  useBulkImportInvestmentValuations,
   useCreateInvestment,
   useDeleteInvestment,
   useDeleteInvestmentValuation,
+  useHoldingsByMonth,
   useInvestmentValuations,
   useInvestments,
   useUpdateInvestment,
@@ -18,7 +25,13 @@ import {
   useProjectionScenarios,
 } from '../../hooks/useProjectionScenarios.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
+import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
+import { HoldingsByMonthChart } from '../../components/charts/HoldingsByMonthChart.js';
+import { YearFilter as YearFilterControl } from '../../components/YearFilter.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
+import type { YearFilterValue } from '../../lib/yearFilter.js';
+import { dateRangeForYear } from '../../lib/yearFilter.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 function AddInvestmentForm() {
@@ -68,7 +81,16 @@ function AddInvestmentForm() {
   );
 }
 
-function InvestmentsList() {
+/** Filters a valuation list to the selected year, matching AccountsPage's chartTrend slicing. */
+function filterValuationsByYear(valuations: ValuationDto[] | undefined, selectedYear: YearFilterValue) {
+  if (!valuations) return valuations;
+  const { dateFrom, dateTo } = dateRangeForYear(selectedYear);
+  return valuations.filter(
+    (v) => (dateFrom === undefined || v.asOfDate >= dateFrom) && (dateTo === undefined || v.asOfDate <= dateTo),
+  );
+}
+
+function InvestmentsList({ selectedYear }: { selectedYear: YearFilterValue }) {
   const { data: investments, isPending, isError } = useInvestments();
   const archiveInvestment = useArchiveInvestment();
   const deleteInvestment = useDeleteInvestment();
@@ -80,6 +102,7 @@ function InvestmentsList() {
   const [rowError, setRowError] = useState<string | null>(null);
 
   const { data: valuations, isPending: isValuationsPending } = useInvestmentValuations(expandedId);
+  const filteredValuations = filterValuationsByYear(valuations, selectedYear);
   const addValuation = useAddInvestmentValuation(expandedId ?? -1);
   const updateValuation = useUpdateInvestmentValuation(expandedId ?? -1);
   const deleteValuation = useDeleteInvestmentValuation(expandedId ?? -1);
@@ -186,7 +209,7 @@ function InvestmentsList() {
               </div>
               {expandedId === investment.id && (
                 <ValuationHistoryPanel
-                  valuations={valuations}
+                  valuations={filteredValuations}
                   isPending={isValuationsPending}
                   onAddValuation={(input) => addValuation.mutate(input)}
                   isAdding={addValuation.isPending}
@@ -202,17 +225,23 @@ function InvestmentsList() {
   );
 }
 
-function ProjectionScenarioRow({ id, name }: { id: number; name: string }) {
-  const { data: result, isPending } = useProjectionResult(id);
+function ProjectionScenarioRow({ scenario }: { scenario: ProjectionScenarioDto }) {
+  const { data: result, isPending } = useProjectionResult(scenario.id);
   const deleteScenario = useDeleteProjectionScenario();
 
   return (
     <li className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-slate-900 dark:text-slate-100">{name}</span>
-        <button onClick={() => deleteScenario.mutate(id)} className={BTN_ROW_ACTION}>
+        <span className="font-medium text-slate-900 dark:text-slate-100">{scenario.name}</span>
+        <button onClick={() => deleteScenario.mutate(scenario.id)} className={BTN_ROW_ACTION}>
           Delete
         </button>
+      </div>
+      {scenario.comments && <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{scenario.comments}</p>}
+      <div className="mt-1 text-xs text-slate-500">
+        {scenario.growthRatePct}%/yr · {formatMoney(scenario.monthlyContribution)}/mo
+        {scenario.retirementAge !== null && ` · retiring at ${scenario.retirementAge}`}
+        {scenario.retirementDate && ` · ${scenario.retirementDate}`}
       </div>
       {!isPending && result && (
         result.projectedValue !== null ? (
@@ -239,6 +268,7 @@ function ProjectionScenarios() {
   const [monthlyContribution, setMonthlyContribution] = useState('0');
   const [retirementAge, setRetirementAge] = useState('');
   const [retirementDate, setRetirementDate] = useState('');
+  const [comments, setComments] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(event: React.FormEvent) {
@@ -250,6 +280,7 @@ function ProjectionScenarios() {
       monthlyContribution: Math.round(Number(monthlyContribution) * 100),
       retirementAge: retirementAge ? Number(retirementAge) : undefined,
       retirementDate: retirementDate || undefined,
+      comments: comments.trim() || undefined,
     };
     createScenario.mutate(input, {
       onSuccess: () => {
@@ -258,6 +289,7 @@ function ProjectionScenarios() {
         setMonthlyContribution('0');
         setRetirementAge('');
         setRetirementDate('');
+        setComments('');
       },
       onError: (err) => setError(err instanceof Error ? err.message : String(err)),
     });
@@ -270,7 +302,8 @@ function ProjectionScenarios() {
       </h2>
       <p className="mb-3 text-xs text-slate-500">
         Applies to the current total investment value, not individual holdings. Retirement age is
-        informational only — the projection uses the retirement date.
+        informational only — the projection uses the retirement date. Keep the name short and use
+        Comments to explain the scenario.
       </p>
       <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <label className="text-sm text-slate-700 dark:text-slate-300">
@@ -320,6 +353,16 @@ function ProjectionScenarios() {
             className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
         </label>
+        <label className="text-sm text-slate-700 dark:text-slate-300 sm:col-span-3">
+          Comments (optional)
+          <textarea
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            rows={2}
+            placeholder="Explain the scenario being modeled, e.g. retiring early with reduced contributions"
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
         <div className="flex items-end">
           <button type="submit" disabled={createScenario.isPending} className={BTN_PRIMARY}>
             {createScenario.isPending ? 'Adding…' : 'Add scenario'}
@@ -332,7 +375,7 @@ function ProjectionScenarios() {
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load projection scenarios.</p>}
       <ul className="space-y-2">
         {scenarios?.map((scenario) => (
-          <ProjectionScenarioRow key={scenario.id} id={scenario.id} name={scenario.name} />
+          <ProjectionScenarioRow key={scenario.id} scenario={scenario} />
         ))}
         {scenarios?.length === 0 && <li className="py-2 text-sm text-slate-500">No scenarios yet.</li>}
       </ul>
@@ -340,10 +383,52 @@ function ProjectionScenarios() {
   );
 }
 
+function HoldingsSection({ selectedYear }: { selectedYear: YearFilterValue }) {
+  const { data: rows, isPending, isError } = useHoldingsByMonth();
+  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load holdings history.</p>;
+  if (!rows || rows.length === 0) {
+    return <p className="text-sm text-slate-500">Add a valuation to an investment to see holdings over time.</p>;
+  }
+
+  const { dateFrom, dateTo } = dateRangeForYear(selectedYear);
+  const filteredRows = rows.filter(
+    (r) => (dateFrom === undefined || r.month >= dateFrom.slice(0, 7)) && (dateTo === undefined || r.month <= dateTo.slice(0, 7)),
+  );
+
+  if (filteredRows.length === 0) {
+    return (
+      <p className="text-sm text-slate-500">
+        {selectedYear === 'all' ? 'No holdings history yet.' : `No holdings history in ${selectedYear}.`}
+      </p>
+    );
+  }
+  return <HoldingsByMonthChart rows={filteredRows} />;
+}
+
 export function InvestmentsPage() {
+  const [showImport, setShowImport] = useState(false);
+  const bulkImportValuations = useBulkImportInvestmentValuations();
+  const { data: holdingsRows } = useHoldingsByMonth();
+  const [selectedYear, setSelectedYear] = useState<YearFilterValue>(new Date().getFullYear());
+
+  const earliestYear = holdingsRows && holdingsRows.length > 0
+    ? Math.min(...holdingsRows.map((r) => Number(r.month.slice(0, 4))))
+    : undefined;
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Investments</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Investments</h1>
+        <YearFilterControl selectedYear={selectedYear} onChange={setSelectedYear} earliestYear={earliestYear} />
+      </div>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Holdings over time ({selectedYear === 'all' ? 'all time' : selectedYear})
+        </h2>
+        <HoldingsSection selectedYear={selectedYear} />
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add investment</h2>
@@ -351,8 +436,23 @@ export function InvestmentsPage() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Holdings</h2>
-        <InvestmentsList />
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Holdings</h2>
+          <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
+            {showImport ? 'Hide import' : 'Import'}
+          </button>
+        </div>
+        {showImport && (
+          <div className="mb-4">
+            <BulkImportCsvForm
+              mutation={bulkImportValuations}
+              headerHint="entityName,asOfDate,value,notes"
+              helpText="A name that doesn't already exist is created automatically. Rows matching an existing valuation (same name + date) are skipped, so it's safe to re-paste."
+              renderResult={renderValuationImportResult}
+            />
+          </div>
+        )}
+        <InvestmentsList selectedYear={selectedYear} />
       </section>
 
       <ProjectionScenarios />

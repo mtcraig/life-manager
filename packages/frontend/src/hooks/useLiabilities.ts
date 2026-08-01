@@ -97,3 +97,26 @@ export function useDeleteLiabilityValuation(liabilityId: number) {
     },
   });
 }
+
+export function useBulkImportLiabilityValuations() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (csvContent: string) => liabilitiesApi.bulkImportLiabilityValuations(csvContent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['liability-valuations'] });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}
+
+export function useUnarchiveLiability() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => liabilitiesApi.unarchiveLiability(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LIABILITIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}

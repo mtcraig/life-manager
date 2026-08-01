@@ -71,6 +71,20 @@
       "when": 1785438510726,
       "tag": "0009_clammy_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1785616488066,
+      "tag": "0010_amusing_wallop",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1785616648367,
+      "tag": "0011_yellow_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

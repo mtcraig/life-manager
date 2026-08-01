@@ -8,6 +8,8 @@ import type {
   MoneyFlowResultDto,
   TopTransactionsQuery,
   TopTransactionsResultDto,
+  TransactionDateBoundsDto,
+  TransactionDateBoundsQuery,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
 
@@ -37,4 +39,8 @@ export function fetchCategorySummaryByMonth(query: Partial<CategorySummaryQuery>
 
 export function fetchTopTransactions(query: Partial<TopTransactionsQuery>) {
   return apiFetch<TopTransactionsResultDto>(`/analytics/top-transactions?${toParams(query)}`);
+}
+
+export function fetchTransactionDateBounds(query: Partial<TransactionDateBoundsQuery>) {
+  return apiFetch<TransactionDateBoundsDto>(`/analytics/transaction-date-bounds?${toParams(query)}`);
 }

@@ -1,9 +1,12 @@
+import { parse } from 'csv-parse/sync';
 import type {
+  BulkImportContentsItemsResultDto,
   ContentsItemDto,
   CreateContentsItemInput,
   UpdateContentsItemInput,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
+import * as areasRepo from '../areas/repo';
 import * as repo from './repo';
 import type { ContentsItemRow } from './repo';
 
@@ -54,4 +57,57 @@ export function deleteContentsItem(id: number): void {
   if (!deleted) {
     throw new HttpError(404, `Contents item ${id} not found`);
   }
+}
+
+/**
+ * Bulk-paste CSV import of an existing contents inventory spreadsheet
+ * (name,area,value,purchaseDate,notes — see the schema comment in
+ * shared/dto/contents-item.ts). Areas referenced by name are created on the
+ * fly if they don't already exist, mirroring bulkImportRules' lookup-or-create
+ * approach for categories/vendors.
+ */
+export function bulkImportContentsItems(csvContent: string): BulkImportContentsItemsResultDto {
+  const records: Record<string, string>[] = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+  });
+
+  let itemsCreated = 0;
+  let areasCreated = 0;
+
+  for (const row of records) {
+    const name = row.name;
+    const areaName = row.area;
+    const rawValue = row.value;
+    const purchaseDate = row.purchaseDate;
+    const notes = row.notes;
+    if (!name || !areaName || !rawValue) {
+      throw new HttpError(
+        400,
+        `CSV row missing required column(s) (name,area,value): ${JSON.stringify(row)}`,
+      );
+    }
+    const value = Math.round(Number(rawValue) * 100);
+    if (Number.isNaN(value)) {
+      throw new HttpError(400, `Invalid numeric value "${rawValue}" for "${name}"`);
+    }
+
+    let area = areasRepo.getAreaByName(areaName);
+    if (!area) {
+      area = areasRepo.insertArea(areaName);
+      areasCreated += 1;
+    }
+
+    repo.insertContentsItem({
+      name,
+      areaId: area.id,
+      value,
+      purchaseDate: purchaseDate && purchaseDate.length > 0 ? purchaseDate : null,
+      notes: notes && notes.length > 0 ? notes : null,
+    });
+    itemsCreated += 1;
+  }
+
+  return { itemsCreated, areasCreated };
 }

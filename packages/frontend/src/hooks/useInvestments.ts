@@ -111,3 +111,24 @@ export function useDeleteInvestmentValuation(investmentId: number) {
     },
   });
 }
+
+export function useHoldingsByMonth() {
+  return useQuery({
+    queryKey: ['holdings-by-month'],
+    queryFn: () => investmentsApi.fetchHoldingsByMonth(),
+  });
+}
+
+export function useBulkImportInvestmentValuations() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (csvContent: string) => investmentsApi.bulkImportInvestmentValuations(csvContent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVESTMENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['investment-valuations'] });
+      queryClient.invalidateQueries({ queryKey: ['holdings-by-month'] });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+      queryClient.invalidateQueries({ queryKey: ['projection-result'] });
+    },
+  });
+}

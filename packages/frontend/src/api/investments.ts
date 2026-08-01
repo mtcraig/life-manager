@@ -1,6 +1,8 @@
 import type {
+  BulkImportValuationsResultDto,
   CreateInvestmentInput,
   CreateValuationInput,
+  HoldingsMonthRowDto,
   InvestmentDto,
   UpdateValuationInput,
   ValuationDto,
@@ -57,4 +59,15 @@ export function updateInvestmentValuation(
 
 export function deleteInvestmentValuation(investmentId: number, valuationId: number) {
   return apiFetch<void>(`/investments/${investmentId}/valuations/${valuationId}`, { method: 'DELETE' });
+}
+
+export function bulkImportInvestmentValuations(csvContent: string) {
+  return apiFetch<BulkImportValuationsResultDto>('/investments/bulk-import-valuations', {
+    method: 'POST',
+    body: JSON.stringify({ csvContent }),
+  });
+}
+
+export function fetchHoldingsByMonth() {
+  return apiFetch<HoldingsMonthRowDto[]>('/investments/holdings-by-month');
 }

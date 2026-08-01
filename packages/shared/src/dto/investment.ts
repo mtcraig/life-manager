@@ -17,3 +17,11 @@ export const createInvestmentSchema = z.object({
   notes: z.string().min(1).optional(),
 });
 export type CreateInvestmentInput = z.infer<typeof createInvestmentSchema>;
+
+/** One (investment, month) point in the holdings-over-time stacked bar chart — see groupHoldingsByMonth. */
+export interface HoldingsMonthRowDto {
+  month: string; // YYYY-MM
+  investmentId: number;
+  investmentName: string;
+  value: number; // integer pence, forward-filled from the most recent valuation at or before this month
+}

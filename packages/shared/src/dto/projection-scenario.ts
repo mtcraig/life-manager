@@ -7,6 +7,8 @@ export interface ProjectionScenarioDto {
   monthlyContribution: number; // integer pence
   retirementAge: number | null;
   retirementDate: string | null; // ISO YYYY-MM-DD
+  /** Free-form explanation of the scenario being modeled — lets the name stay a short title. */
+  comments: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +19,7 @@ export const createProjectionScenarioSchema = z.object({
   monthlyContribution: z.number().int().default(0),
   retirementAge: z.number().int().positive().optional(),
   retirementDate: z.string().optional(),
+  comments: z.string().min(1).optional(),
 });
 export type CreateProjectionScenarioInput = z.infer<typeof createProjectionScenarioSchema>;
 

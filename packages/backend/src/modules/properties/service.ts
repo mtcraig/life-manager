@@ -1,4 +1,6 @@
+import { parse } from 'csv-parse/sync';
 import type {
+  BulkImportValuationsResultDto,
   CreatePropertyInput,
   CreateValuationInput,
   PropertyDto,
@@ -150,4 +152,60 @@ export function deleteValuation(propertyId: number, valuationId: number): void {
     throw new HttpError(404, `Valuation ${valuationId} not found for property ${propertyId}`);
   }
   repo.deleteValuation(propertyId, valuationId);
+}
+
+/**
+ * Bulk-paste CSV import of a spreadsheet's existing valuation history
+ * (entityName,asOfDate,value,notes — see the schema comment in
+ * shared/dto/valued-entity.ts). Properties referenced by name are created on
+ * the fly if they don't already exist (with no address, so no geocode lookup
+ * happens here — mirrors bulkImportRules' lookup-or-create for categories/vendors).
+ */
+export function bulkImportValuations(csvContent: string): BulkImportValuationsResultDto {
+  const records: Record<string, string>[] = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+  });
+
+  let valuationsCreated = 0;
+  let entitiesCreated = 0;
+
+  for (const row of records) {
+    const entityName = row.entityName;
+    const asOfDate = row.asOfDate;
+    const rawValue = row.value;
+    const notes = row.notes;
+    if (!entityName || !asOfDate || !rawValue) {
+      throw new HttpError(
+        400,
+        `CSV row missing required column(s) (entityName,asOfDate,value): ${JSON.stringify(row)}`,
+      );
+    }
+    const value = Math.round(Number(rawValue) * 100);
+    if (Number.isNaN(value)) {
+      throw new HttpError(400, `Invalid numeric value "${rawValue}" for "${entityName}" on ${asOfDate}`);
+    }
+
+    let property = repo.getPropertyByName(entityName);
+    if (!property) {
+      property = repo.insertProperty({ name: entityName, address: null, notes: null, lat: null, lng: null });
+      entitiesCreated += 1;
+    }
+
+    try {
+      repo.insertValuation(property.id, {
+        asOfDate,
+        value,
+        notes: notes && notes.length > 0 ? notes : null,
+      });
+      valuationsCreated += 1;
+    } catch (error) {
+      if (!(error instanceof Error && error.message.includes('UNIQUE constraint failed'))) {
+        throw error;
+      }
+    }
+  }
+
+  return { valuationsCreated, entitiesCreated };
 }

@@ -3,37 +3,20 @@ import type { CategoryMonthSummaryRowDto } from '@life-manager/shared';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { useChartColors } from '../../theme/useChartColors.js';
 import { useTheme } from '../../theme/ThemeProvider.js';
+import {
+  CATEGORY_PALETTE_DARK,
+  CATEGORY_PALETTE_LIGHT,
+  MAX_CATEGORICAL_SERIES,
+  OTHER_COLOR_DARK,
+  OTHER_COLOR_LIGHT,
+} from '../../theme/categoricalPalette.js';
 
 interface CategorySpendingChartProps {
   rows: CategoryMonthSummaryRowDto[];
 }
 
-const MAX_SERIES = 8;
+const MAX_SERIES = MAX_CATEGORICAL_SERIES;
 const OTHER_KEY = 'Other';
-
-/** Validated 8-slot categorical palette (see dataviz skill's palette.md) — fixed order, never cycled. */
-const CATEGORY_PALETTE_LIGHT = [
-  '#2a78d6',
-  '#eb6834',
-  '#1baf7a',
-  '#eda100',
-  '#e87ba4',
-  '#008300',
-  '#4a3aa7',
-  '#e34948',
-];
-const CATEGORY_PALETTE_DARK = [
-  '#3987e5',
-  '#d95926',
-  '#199e70',
-  '#c98500',
-  '#d55181',
-  '#008300',
-  '#9085e9',
-  '#e66767',
-];
-const OTHER_COLOR_LIGHT = '#94a3b8'; // slate-400
-const OTHER_COLOR_DARK = '#64748b'; // slate-500
 
 interface PivotedMonth {
   month: string;
@@ -65,7 +48,7 @@ function pivotByMonth(rows: CategoryMonthSummaryRowDto[]): { data: PivotedMonth[
   return { data, categoryKeys };
 }
 
-/** Stacked bar, one segment per category, one bar per month. Categories beyond the top 8 (by total) fold into "Other". */
+/** Stacked bar, one segment per category, one bar per month. Categories beyond the top 15 (by total) fold into "Other". */
 export function CategorySpendingChart({ rows }: CategorySpendingChartProps) {
   const colors = useChartColors();
   const { theme } = useTheme();

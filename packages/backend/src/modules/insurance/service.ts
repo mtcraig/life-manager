@@ -11,7 +11,7 @@ function toDto(row: InsurancePlanRow): InsurancePlanDto {
   return {
     id: row.id,
     name: row.name,
-    type: row.type,
+    type: row.type as InsurancePlanDto['type'],
     coverageAmount: row.coverageAmount,
     premiumAmount: row.premiumAmount,
     premiumFrequency: row.premiumFrequency as InsurancePlanDto['premiumFrequency'],
@@ -19,6 +19,9 @@ function toDto(row: InsurancePlanRow): InsurancePlanDto {
     renewalDate: row.renewalDate,
     provider: row.provider,
     notes: row.notes,
+    policyNumber: row.policyNumber,
+    vehicleRegistration: row.vehicleRegistration,
+    postcode: row.postcode,
     cancelledAt: row.cancelledAt === null ? null : new Date(row.cancelledAt).toISOString(),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
@@ -61,6 +64,9 @@ export function createInsurancePlan(input: CreateInsurancePlanInput): InsuranceP
     renewalDate: input.renewalDate,
     provider: input.provider ?? null,
     notes: input.notes ?? null,
+    policyNumber: input.policyNumber ?? null,
+    vehicleRegistration: input.vehicleRegistration ?? null,
+    postcode: input.postcode ?? null,
   });
   return toDto(row);
 }
@@ -79,6 +85,9 @@ export function updateInsurancePlan(id: number, input: UpdateInsurancePlanInput)
     ...(input.renewalDate !== undefined && { renewalDate: input.renewalDate }),
     ...(input.provider !== undefined && { provider: input.provider ?? null }),
     ...(input.notes !== undefined && { notes: input.notes ?? null }),
+    ...(input.policyNumber !== undefined && { policyNumber: input.policyNumber ?? null }),
+    ...(input.vehicleRegistration !== undefined && { vehicleRegistration: input.vehicleRegistration ?? null }),
+    ...(input.postcode !== undefined && { postcode: input.postcode ?? null }),
   });
   return toDto(row as NonNullable<typeof row>);
 }

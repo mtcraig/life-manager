@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { createPropertySchema, createValuationSchema, updateValuationSchema } from '@life-manager/shared';
+import {
+  bulkImportValuationsSchema,
+  createPropertySchema,
+  createValuationSchema,
+  updateValuationSchema,
+} from '@life-manager/shared';
 import { z } from 'zod';
 import * as service from './service';
 
@@ -77,5 +82,10 @@ export async function propertyRoutes(app: FastifyInstance) {
     const { id, valuationId } = valuationParamSchema.parse(request.params);
     service.deleteValuation(id, valuationId);
     reply.status(204);
+  });
+
+  app.post('/properties/bulk-import-valuations', async (request) => {
+    const input = bulkImportValuationsSchema.parse(request.body);
+    return service.bulkImportValuations(input.csvContent);
   });
 }

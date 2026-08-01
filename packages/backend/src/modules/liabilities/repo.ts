@@ -44,6 +44,10 @@ export function getLiabilityById(id: number): LiabilityRow | undefined {
   return db.select().from(liabilities).where(eq(liabilities.id, id)).get();
 }
 
+export function getLiabilityByName(name: string): LiabilityRow | undefined {
+  return db.select().from(liabilities).where(eq(liabilities.name, name)).get();
+}
+
 export function insertLiability(fields: LiabilityWriteFields): LiabilityRow {
   const now = Date.now();
   return db
@@ -69,6 +73,15 @@ export function archiveLiability(id: number): LiabilityRow | undefined {
   return db
     .update(liabilities)
     .set({ archivedAt: Date.now(), updatedAt: Date.now() })
+    .where(eq(liabilities.id, id))
+    .returning()
+    .get();
+}
+
+export function unarchiveLiability(id: number): LiabilityRow | undefined {
+  return db
+    .update(liabilities)
+    .set({ archivedAt: null, updatedAt: Date.now() })
     .where(eq(liabilities.id, id))
     .returning()
     .get();

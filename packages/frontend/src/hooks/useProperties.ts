@@ -93,3 +93,15 @@ export function useDeletePropertyValuation(propertyId: number) {
     },
   });
 }
+
+export function useBulkImportPropertyValuations() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (csvContent: string) => propertiesApi.bulkImportPropertyValuations(csvContent),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PROPERTIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['property-valuations'] });
+      queryClient.invalidateQueries({ queryKey: ['wealth'] });
+    },
+  });
+}

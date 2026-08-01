@@ -26,3 +26,22 @@ export type CreateValuationInput = z.infer<typeof createValuationSchema>;
 
 export const updateValuationSchema = createValuationSchema.partial();
 export type UpdateValuationInput = z.infer<typeof updateValuationSchema>;
+
+/**
+ * Fixed-format CSV import for bringing in a spreadsheet's existing valuation history —
+ * the app's own domain data, not an external bank export, so (like Energy's bulk import)
+ * this isn't the configurable column-mapping approach accounts use. Expected headers:
+ * entityName,asOfDate,value,notes. `entityName` is looked up by name within the domain
+ * (investment/property/liability) the import is posted to, creating it if it doesn't
+ * already exist — the same lookup-or-create-by-name idiom bulkImportRules uses for
+ * categories/vendors.
+ */
+export const bulkImportValuationsSchema = z.object({
+  csvContent: z.string().min(1),
+});
+export type BulkImportValuationsInput = z.infer<typeof bulkImportValuationsSchema>;
+
+export interface BulkImportValuationsResultDto {
+  valuationsCreated: number;
+  entitiesCreated: number;
+}

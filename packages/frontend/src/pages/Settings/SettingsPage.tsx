@@ -3,6 +3,7 @@ import { CategorisationRulesSettings } from './CategorisationRulesSettings.js';
 import { GeneralSettings } from './GeneralSettings.js';
 import { IngestionHistorySettings } from './IngestionHistorySettings.js';
 import { DatabaseSettings } from './DatabaseSettings.js';
+import { SupportSettings } from './SupportSettings.js';
 
 export function SettingsPage() {
   return (
@@ -32,6 +33,10 @@ export function SettingsPage() {
       <div>
         <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Database</h2>
         <DatabaseSettings />
+      </div>
+      <div>
+        <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Support</h2>
+        <SupportSettings />
       </div>
     </div>
   );

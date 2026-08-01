@@ -11,6 +11,7 @@ export function DetailPage() {
   const { data: vendors } = useVendors();
   const updateCategory = useUpdateTransactionCategory();
   const [accountId, setAccountId] = useState<string>('');
+  const [vendorId, setVendorId] = useState<string>('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [uncategorisedOnly, setUncategorisedOnly] = useState(false);
@@ -18,6 +19,7 @@ export function DetailPage() {
 
   const { data, isPending, isError } = useTransactions({
     accountId: accountId ? Number(accountId) : undefined,
+    vendorId: vendorId ? Number(vendorId) : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
     uncategorisedOnly: uncategorisedOnly || undefined,
@@ -47,6 +49,24 @@ export function DetailPage() {
             {accounts?.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Vendor
+          <select
+            value={vendorId}
+            onChange={(e) => {
+              setVendorId(e.target.value);
+              setPage(1);
+            }}
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          >
+            <option value="">All vendors</option>
+            {vendors?.map((vendor) => (
+              <option key={vendor.id} value={vendor.id}>
+                {vendor.name}
               </option>
             ))}
           </select>

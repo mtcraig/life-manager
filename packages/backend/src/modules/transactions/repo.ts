@@ -44,6 +44,7 @@ function buildFilters(query: TransactionListQuery) {
   if (query.dateFrom !== undefined) conditions.push(gte(transactions.date, query.dateFrom));
   if (query.dateTo !== undefined) conditions.push(lte(transactions.date, query.dateTo));
   if (query.categoryId !== undefined) conditions.push(eq(transactions.categoryId, query.categoryId));
+  if (query.vendorId !== undefined) conditions.push(eq(transactions.vendorId, query.vendorId));
   if (query.uncategorisedOnly) conditions.push(isNull(transactions.categoryId));
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
@@ -283,6 +284,17 @@ export function listTopTransactionsByAmount(params: {
     .orderBy(params.direction === 'in' ? desc(transactions.amount) : asc(transactions.amount))
     .limit(params.limit)
     .all();
+}
+
+/** Earliest transaction date on record, so year filters can offer only years with real data. */
+export function getEarliestTransactionDate(accountId?: number): string | null {
+  const where = accountId !== undefined ? eq(transactions.accountId, accountId) : undefined;
+  const { earliest } = db
+    .select({ earliest: sql<string | null>`min(${transactions.date})` })
+    .from(transactions)
+    .where(where)
+    .get() as { earliest: string | null };
+  return earliest;
 }
 
 /**

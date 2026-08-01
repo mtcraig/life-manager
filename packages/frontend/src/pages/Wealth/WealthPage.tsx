@@ -4,6 +4,7 @@ import { useWealthSummary } from '../../hooks/useWealth.js';
 import {
   useArchiveProperty,
   useAddPropertyValuation,
+  useBulkImportPropertyValuations,
   useCreateProperty,
   useDeleteProperty,
   useDeletePropertyValuation,
@@ -15,17 +16,21 @@ import {
 import {
   useArchiveLiability,
   useAddLiabilityValuation,
+  useBulkImportLiabilityValuations,
   useCreateLiability,
   useDeleteLiability,
   useDeleteLiabilityValuation,
   useLiabilities,
   useLiabilityValuations,
+  useUnarchiveLiability,
   useUpdateLiability,
   useUpdateLiabilityValuation,
 } from '../../hooks/useLiabilities.js';
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
+import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { PropertyMap } from '../../components/PropertyMap.js';
 import { formatMoney } from '../../lib/formatMoney.js';
+import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 function SummaryTile({
@@ -59,6 +64,8 @@ function PropertiesSection() {
   const archiveProperty = useArchiveProperty();
   const deleteProperty = useDeleteProperty();
   const updateProperty = useUpdateProperty();
+  const bulkImportValuations = useBulkImportPropertyValuations();
+  const [showImport, setShowImport] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
@@ -117,7 +124,22 @@ function PropertiesSection() {
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Properties</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Properties</h2>
+        <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
+          {showImport ? 'Hide import' : 'Import'}
+        </button>
+      </div>
+      {showImport && (
+        <div className="mb-4">
+          <BulkImportCsvForm
+            mutation={bulkImportValuations}
+            headerHint="entityName,asOfDate,value,notes"
+            helpText="A name that doesn't already exist is created automatically. Rows matching an existing valuation (same name + date) are skipped, so it's safe to re-paste."
+            renderResult={renderValuationImportResult}
+          />
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="mb-4 flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-700 dark:text-slate-300">
           Name
@@ -224,11 +246,15 @@ function PropertiesSection() {
 }
 
 function LiabilitiesSection() {
-  const { data: liabilities, isPending, isError } = useLiabilities();
+  const [showArchived, setShowArchived] = useState(false);
+  const { data: liabilities, isPending, isError } = useLiabilities(showArchived);
   const createLiability = useCreateLiability();
   const archiveLiability = useArchiveLiability();
+  const unarchiveLiability = useUnarchiveLiability();
   const deleteLiability = useDeleteLiability();
   const updateLiability = useUpdateLiability();
+  const bulkImportValuations = useBulkImportLiabilityValuations();
+  const [showImport, setShowImport] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
@@ -274,6 +300,13 @@ function LiabilitiesSection() {
     });
   }
 
+  function handleUnarchive(liabilityId: number) {
+    setRowError(null);
+    unarchiveLiability.mutate(liabilityId, {
+      onError: (error) => setRowError(error instanceof Error ? error.message : String(error)),
+    });
+  }
+
   function handleDelete(liability: { id: number; name: string }) {
     const confirmed = window.confirm(
       `Permanently delete "${liability.name}" and all its valuations? This cannot be undone.`,
@@ -287,7 +320,32 @@ function LiabilitiesSection() {
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Liabilities</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Liabilities</h2>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            Show archived
+          </label>
+          <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
+            {showImport ? 'Hide import' : 'Import'}
+          </button>
+        </div>
+      </div>
+      {showImport && (
+        <div className="mb-4">
+          <BulkImportCsvForm
+            mutation={bulkImportValuations}
+            headerHint="entityName,asOfDate,value,notes"
+            helpText="A name that doesn't already exist is created automatically. Rows matching an existing valuation (same name + date) are skipped, so it's safe to re-paste."
+            renderResult={renderValuationImportResult}
+          />
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="mb-4 flex flex-wrap items-end gap-3">
         <label className="text-sm text-slate-700 dark:text-slate-300">
           Name
@@ -358,15 +416,24 @@ function LiabilitiesSection() {
                   {liability.kind && <span className="ml-2 text-xs text-slate-500">{liability.kind}</span>}
                 </button>
                 <div className="flex items-center gap-3">
+                  {liability.archivedAt && (
+                    <span className="text-xs text-slate-500">Archived</span>
+                  )}
                   <span className="font-medium text-slate-900 dark:text-slate-100">
                     {liability.currentValue !== null ? formatMoney(liability.currentValue) : '—'}
                   </span>
                   <button onClick={() => startEditing(liability)} className={BTN_ROW_ACTION}>
                     Edit
                   </button>
-                  <button onClick={() => handleArchive(liability.id)} className={BTN_ROW_ACTION}>
-                    Archive
-                  </button>
+                  {liability.archivedAt ? (
+                    <button onClick={() => handleUnarchive(liability.id)} className={BTN_ROW_ACTION}>
+                      Unarchive
+                    </button>
+                  ) : (
+                    <button onClick={() => handleArchive(liability.id)} className={BTN_ROW_ACTION}>
+                      Archive
+                    </button>
+                  )}
                   <button onClick={() => handleDelete(liability)} className={BTN_ROW_ACTION}>
                     Delete
                   </button>

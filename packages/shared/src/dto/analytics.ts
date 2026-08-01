@@ -76,3 +76,13 @@ export const topTransactionsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(50).default(5),
 });
 export type TopTransactionsQuery = z.infer<typeof topTransactionsQuerySchema>;
+
+export const transactionDateBoundsQuerySchema = z.object({
+  accountId: z.coerce.number().int().positive().optional(),
+});
+export type TransactionDateBoundsQuery = z.infer<typeof transactionDateBoundsQuerySchema>;
+
+/** Drives year-filter controls so they only offer years with real data, instead of a fixed window. */
+export interface TransactionDateBoundsDto {
+  earliestDate: string | null; // ISO YYYY-MM-DD, null when there are no transactions yet
+}
