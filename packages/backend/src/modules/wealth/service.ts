@@ -9,7 +9,14 @@ import * as transactionsRepo from '../transactions/repo';
 import { computeWealthSummary, sumLatestValuations } from '../../lib/calculations/wealth';
 import { computeBalanceTrend } from '../../lib/calculations/balanceTrend';
 import { buildMonthlyDateAxis, computeNetWorthTrend } from '../../lib/calculations/netWorthTrend';
-import type { AccountBalanceSeries } from '../../lib/calculations/netWorthTrend';
+import type { AccountBalanceSeries, ValuedEntityMeta } from '../../lib/calculations/netWorthTrend';
+
+function toEntityMeta(rows: { id: number; archivedAt: number | null }[]): ValuedEntityMeta[] {
+  return rows.map((row) => ({
+    id: row.id,
+    archivedAt: row.archivedAt === null ? null : new Date(row.archivedAt).toISOString().slice(0, 10),
+  }));
+}
 
 /**
  * credit_card accounts are liabilities, not liquid assets — their current
@@ -69,9 +76,10 @@ export function getWealthSummary(): WealthSummaryDto {
 /**
  * Net worth reindexed onto a monthly date axis, from the earliest data point
  * (across transactions and valuations) through today. See netWorthTrend.ts
- * for the reindexing/forward-fill approach and its known simplifications
- * (archived entities excluded uniformly using today's state, contents held
- * constant throughout since it has no history at all).
+ * for the reindexing/forward-fill approach — each entity's `archivedAt` is
+ * passed through so archival is evaluated per date-axis point, not just as
+ * of today (paying off and archiving a mortgage must not retroactively wipe
+ * its real historical balance from past points).
  */
 export function getNetWorthTrend(): NetWorthTrendPointDto[] {
   const today = new Date().toISOString().slice(0, 10);
@@ -89,9 +97,9 @@ export function getNetWorthTrend(): NetWorthTrendPointDto[] {
   const propertyValuations = propertiesRepo.listAllValuationRows();
   const liabilityValuations = liabilitiesRepo.listAllValuationRows();
 
-  const activeInvestmentIds = investmentsRepo.listInvestments(false).map((i) => i.id);
-  const activePropertyIds = propertiesRepo.listProperties(false).map((p) => p.id);
-  const activeLiabilityIds = liabilitiesRepo.listLiabilities(false).map((l) => l.id);
+  const investmentEntities = toEntityMeta(investmentsRepo.listInvestments(true));
+  const propertyEntities = toEntityMeta(propertiesRepo.listProperties(true));
+  const liabilityEntities = toEntityMeta(liabilitiesRepo.listLiabilities(true));
 
   const contentsTotal = contentsRepo.sumAllValues();
 
@@ -111,11 +119,11 @@ export function getNetWorthTrend(): NetWorthTrendPointDto[] {
     dateAxis,
     accountSeries,
     investmentValuations,
-    activeInvestmentIds,
+    investmentEntities,
     propertyValuations,
-    activePropertyIds,
+    propertyEntities,
     liabilityValuations,
-    activeLiabilityIds,
+    liabilityEntities,
     contentsTotal,
   });
 }

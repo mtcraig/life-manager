@@ -24,11 +24,11 @@ describe('computeNetWorthTrend', () => {
     dateAxis: ['2026-06-30', '2026-07-31', '2026-08-15'],
     accountSeries: [],
     investmentValuations: [],
-    activeInvestmentIds: [],
+    investmentEntities: [],
     propertyValuations: [],
-    activePropertyIds: [],
+    propertyEntities: [],
     liabilityValuations: [],
-    activeLiabilityIds: [],
+    liabilityEntities: [],
     contentsTotal: 0,
   };
 
@@ -80,18 +80,44 @@ describe('computeNetWorthTrend', () => {
     const result = computeNetWorthTrend({
       ...baseInput,
       propertyValuations: [{ entityId: 10, asOfDate: '2026-01-01', value: 300000000 }],
-      activePropertyIds: [10],
+      propertyEntities: [{ id: 10, archivedAt: null }],
     });
     expect(result.map((p) => p.propertiesTotal)).toEqual([300000000, 300000000, 300000000]);
   });
 
-  it('excludes an entity not in the active id list', () => {
+  it('excludes an entity that was archived before the earliest data even existed', () => {
     const result = computeNetWorthTrend({
       ...baseInput,
       propertyValuations: [{ entityId: 10, asOfDate: '2026-01-01', value: 300000000 }],
-      activePropertyIds: [], // archived
+      propertyEntities: [{ id: 10, archivedAt: '2020-01-01' }],
     });
     expect(result.every((p) => p.propertiesTotal === 0)).toBe(true);
+  });
+
+  it('does not retroactively erase a liability from historical points once it is archived — only from its archival date onward', () => {
+    // Reproduces the mortgage-payoff bug: a liability held a real balance for
+    // years, was paid off, and was archived today. Points before the archival
+    // date must still reflect its true historical balance.
+    const result = computeNetWorthTrend({
+      ...baseInput,
+      dateAxis: ['2026-06-30', '2026-07-15', '2026-07-31'],
+      liabilityValuations: [
+        { entityId: 20, asOfDate: '2026-01-01', value: 150000 },
+        { entityId: 20, asOfDate: '2026-07-10', value: 0 }, // paid off
+      ],
+      liabilityEntities: [{ id: 20, archivedAt: '2026-07-20' }], // archived after payoff
+    });
+    expect(result.map((p) => p.liabilitiesTotal)).toEqual([150000, 0, 0]);
+  });
+
+  it('excludes a liability from any point on or after its archival date, even if it still had a nonzero recorded balance', () => {
+    const result = computeNetWorthTrend({
+      ...baseInput,
+      dateAxis: ['2026-06-30', '2026-07-31'],
+      liabilityValuations: [{ entityId: 20, asOfDate: '2026-01-01', value: 150000 }],
+      liabilityEntities: [{ id: 20, archivedAt: '2026-07-01' }],
+    });
+    expect(result.map((p) => p.liabilitiesTotal)).toEqual([150000, 0]);
   });
 
   it('holds contentsTotal constant across every point', () => {
@@ -104,9 +130,9 @@ describe('computeNetWorthTrend', () => {
       ...baseInput,
       accountSeries: [{ accountId: 1, isCreditCard: false, points: [{ date: '2026-06-01', balance: 100000 }] }],
       propertyValuations: [{ entityId: 10, asOfDate: '2026-06-01', value: 50000 }],
-      activePropertyIds: [10],
+      propertyEntities: [{ id: 10, archivedAt: null }],
       liabilityValuations: [{ entityId: 20, asOfDate: '2026-06-01', value: 30000 }],
-      activeLiabilityIds: [20],
+      liabilityEntities: [{ id: 20, archivedAt: null }],
       contentsTotal: 5000,
     });
     expect(result[0]!.netWorth).toBe(100000 + 50000 + 5000 - 30000);

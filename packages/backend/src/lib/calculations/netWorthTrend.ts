@@ -11,6 +11,12 @@ export interface ValuationRow {
   value: number;
 }
 
+export interface ValuedEntityMeta {
+  id: number;
+  /** ISO YYYY-MM-DD the entity was archived, or null if it never has been. */
+  archivedAt: string | null;
+}
+
 export interface NetWorthTrendPoint {
   date: string;
   accountsTotal: number;
@@ -29,6 +35,15 @@ function balanceAsOf(points: { date: string; balance: number }[], cutoff: string
     result = point.balance;
   }
   return result;
+}
+
+/** Which entities were active (not yet archived) as of the given date — an entity archived *after* this date still counts, since it genuinely existed then. */
+function activeEntityIdsAsOf(entities: ValuedEntityMeta[], cutoff: string): Set<number> {
+  const active = new Set<number>();
+  for (const entity of entities) {
+    if (entity.archivedAt === null || entity.archivedAt > cutoff) active.add(entity.id);
+  }
+  return active;
 }
 
 /** Sums each active entity's latest valuation on or before the cutoff — a sparsely-valued entity (e.g. a property revalued once a year) still contributes its last known value to every date in between. */
@@ -86,25 +101,25 @@ export function buildMonthlyDateAxis(earliestDate: string, today: string): strin
  * the whole series — the same approximation the current-only Wealth summary
  * already makes implicitly by never reporting anything but "now".
  *
- * Archived entities are excluded using *today's* archived state uniformly
- * across the whole series (there's no per-valuation archival timestamp to
- * do better than that with) — a known simplification, not a bug.
+ * Each entity's active/archived state is evaluated *per date-axis point*
+ * using its own `archivedAt` timestamp, not once as-of-today — otherwise
+ * archiving a liability/property/investment would retroactively erase its
+ * contribution from every historical point too, not just future ones (e.g.
+ * paying off and archiving a mortgage would make net worth in 2021 look
+ * higher than it really was, since the still-outstanding balance back then
+ * would vanish from the total the instant the mortgage is archived today).
  */
 export function computeNetWorthTrend(input: {
   dateAxis: string[];
   accountSeries: AccountBalanceSeries[];
   investmentValuations: ValuationRow[];
-  activeInvestmentIds: number[];
+  investmentEntities: ValuedEntityMeta[];
   propertyValuations: ValuationRow[];
-  activePropertyIds: number[];
+  propertyEntities: ValuedEntityMeta[];
   liabilityValuations: ValuationRow[];
-  activeLiabilityIds: number[];
+  liabilityEntities: ValuedEntityMeta[];
   contentsTotal: number;
 }): NetWorthTrendPoint[] {
-  const activeInvestmentIds = new Set(input.activeInvestmentIds);
-  const activePropertyIds = new Set(input.activePropertyIds);
-  const activeLiabilityIds = new Set(input.activeLiabilityIds);
-
   return input.dateAxis.map((date) => {
     let accountsTotal = 0;
     let creditCardLiabilityTotal = 0;
@@ -116,6 +131,10 @@ export function computeNetWorthTrend(input: {
         accountsTotal += balance;
       }
     }
+
+    const activeInvestmentIds = activeEntityIdsAsOf(input.investmentEntities, date);
+    const activePropertyIds = activeEntityIdsAsOf(input.propertyEntities, date);
+    const activeLiabilityIds = activeEntityIdsAsOf(input.liabilityEntities, date);
 
     const investmentsTotal = latestValueAsOf(input.investmentValuations, activeInvestmentIds, date);
     const propertiesTotal = latestValueAsOf(input.propertyValuations, activePropertyIds, date);
