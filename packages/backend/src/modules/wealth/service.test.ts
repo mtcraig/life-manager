@@ -18,7 +18,7 @@ vi.mock('../investments/repo', () => ({
 
 vi.mock('../properties/repo', () => ({
   listAllValuationRows: vi.fn(() => [{ entityId: 10, asOfDate: '2026-06-01', value: 50000000 }]),
-  listProperties: vi.fn(() => [{ id: 10 }]),
+  listProperties: vi.fn(() => [{ id: 10, archivedAt: null }]),
 }));
 
 vi.mock('../liabilities/repo', () => ({
@@ -48,5 +48,4 @@ describe('getNetWorthTrend', () => {
     expect(last.contentsTotal).toBe(20000);
     expect(last.netWorth).toBe(100000 + 50000000 + 20000);
   });
-
 });
