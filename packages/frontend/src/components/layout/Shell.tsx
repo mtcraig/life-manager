@@ -4,6 +4,7 @@ import { ServerStatus } from './ServerStatus.js';
 import { ExitButton } from './ExitButton.js';
 import {
   AccountsIcon,
+  BudgetsIcon,
   ContentsIcon,
   DetailIcon,
   EnergyIcon,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/accounts', label: 'Accounts', icon: AccountsIcon },
   { to: '/detail', label: 'Detail', icon: DetailIcon },
   { to: '/wealth', label: 'Wealth', icon: WealthIcon },
+  { to: '/budgets', label: 'Budgets', icon: BudgetsIcon },
   { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
   { to: '/insurance', label: 'Insurance', icon: InsuranceIcon },
   { to: '/energy', label: 'Energy', icon: EnergyIcon },
