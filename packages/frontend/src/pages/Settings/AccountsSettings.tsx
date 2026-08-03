@@ -19,7 +19,7 @@ import { useJob } from '../../hooks/useJobs.js';
 import { JobProgressBar } from '../../components/JobProgressBar.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 interface AccountFormDraft {
   name: string;
@@ -467,7 +467,7 @@ export function AccountsSettings() {
                       Ingest now
                     </button>
                   )}
-                  <button onClick={() => handleDelete(account)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => handleDelete(account)} className={BTN_ROW_ACTION_DANGER}>
                     Delete
                   </button>
                 </div>

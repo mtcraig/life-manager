@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import type { CreateSubscriptionInput, SubscriptionDto, SubscriptionFrequency } from '@life-manager/shared';
+import type {
+  CreateSubscriptionInput,
+  SubscriptionDto,
+  SubscriptionFrequency,
+  UpdateSubscriptionInput,
+} from '@life-manager/shared';
 import { SUBSCRIPTION_FREQUENCIES } from '@life-manager/shared';
 import { useCategories } from '../../hooks/useCategories.js';
 import {
@@ -7,11 +12,12 @@ import {
   useCreateSubscription,
   useDeleteSubscription,
   useSubscriptions,
+  useUpdateSubscription,
 } from '../../hooks/useSubscriptions.js';
 import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_ACCENT, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 type SubscriptionStatus = 'cancelled' | 'upcoming' | 'active';
 
@@ -191,7 +197,51 @@ function SubscriptionsList() {
   const { data: categories } = useCategories();
   const deleteSubscription = useDeleteSubscription();
   const cancelSubscription = useCancelSubscription();
+  const updateSubscription = useUpdateSubscription();
   const categoryNameById = new Map(categories?.map((c) => [c.id, c.name]));
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editProvider, setEditProvider] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editFrequency, setEditFrequency] = useState<SubscriptionFrequency>('monthly');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editNextRenewalDate, setEditNextRenewalDate] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+
+  function startEditing(subscription: SubscriptionDto) {
+    setEditingId(subscription.id);
+    setEditName(subscription.name);
+    setEditProvider(subscription.provider ?? '');
+    setEditCategoryId(subscription.categoryId ? String(subscription.categoryId) : '');
+    setEditAmount((subscription.amount / 100).toString());
+    setEditFrequency(subscription.frequency);
+    setEditStartDate(subscription.startDate);
+    setEditNextRenewalDate(subscription.nextRenewalDate);
+    setEditError(null);
+  }
+
+  function handleEditSubmit(event: React.FormEvent, subscriptionId: number) {
+    event.preventDefault();
+    setEditError(null);
+    const input: UpdateSubscriptionInput = {
+      name: editName,
+      provider: editProvider.trim() || undefined,
+      amount: Math.round(Number(editAmount) * 100),
+      frequency: editFrequency,
+      categoryId: editCategoryId ? Number(editCategoryId) : undefined,
+      startDate: editStartDate,
+      nextRenewalDate: editNextRenewalDate,
+    };
+    updateSubscription.mutate(
+      { id: subscriptionId, input },
+      {
+        onSuccess: () => setEditingId(null),
+        onError: (err) => setEditError(err instanceof Error ? err.message : String(err)),
+      },
+    );
+  }
 
   if (isPending) return <SkeletonRows rows={3} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load subscriptions.</p>;
@@ -203,6 +253,105 @@ function SubscriptionsList() {
     <ul className="divide-y divide-slate-100 dark:divide-slate-800">
       {subscriptions.map((subscription) => {
         const status = deriveSubscriptionStatus(subscription);
+
+        if (editingId === subscription.id) {
+          return (
+            <li key={subscription.id} className="py-3">
+              <form
+                onSubmit={(e) => handleEditSubmit(e, subscription.id)}
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+              >
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Name
+                  <input
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Provider (optional)
+                  <input
+                    value={editProvider}
+                    onChange={(e) => setEditProvider(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Category (optional)
+                  <select
+                    value={editCategoryId}
+                    onChange={(e) => setEditCategoryId(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  >
+                    <option value="">None</option>
+                    {categories?.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Amount (£)
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Frequency
+                  <select
+                    value={editFrequency}
+                    onChange={(e) => setEditFrequency(e.target.value as SubscriptionFrequency)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  >
+                    {SUBSCRIPTION_FREQUENCIES.map((f) => (
+                      <option key={f} value={f}>
+                        {humanizeEnumValue(f)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Start date
+                  <input
+                    required
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <label className="text-sm text-slate-700 dark:text-slate-300">
+                  Next renewal date
+                  <input
+                    required
+                    type="date"
+                    value={editNextRenewalDate}
+                    onChange={(e) => setEditNextRenewalDate(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                </label>
+                <div className="flex items-end gap-2">
+                  <button type="submit" disabled={updateSubscription.isPending} className={BTN_PRIMARY}>
+                    {updateSubscription.isPending ? 'Saving…' : 'Save'}
+                  </button>
+                  <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                    Cancel
+                  </button>
+                </div>
+                {editError && <p className="col-span-full text-sm text-red-600 dark:text-red-400">{editError}</p>}
+              </form>
+            </li>
+          );
+        }
+
         return (
           <li key={subscription.id} className="flex items-center justify-between py-3">
             <div>
@@ -220,12 +369,15 @@ function SubscriptionsList() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => startEditing(subscription)} className={BTN_ROW_ACTION}>
+                Edit
+              </button>
               {!subscription.cancelledAt && (
-                <button onClick={() => cancelSubscription.mutate(subscription.id)} className={BTN_ROW_ACTION}>
+                <button onClick={() => cancelSubscription.mutate(subscription.id)} className={BTN_ROW_ACTION_ACCENT}>
                   Cancel
                 </button>
               )}
-              <button onClick={() => deleteSubscription.mutate(subscription.id)} className={BTN_ROW_ACTION}>
+              <button onClick={() => deleteSubscription.mutate(subscription.id)} className={BTN_ROW_ACTION_DANGER}>
                 Delete
               </button>
             </div>

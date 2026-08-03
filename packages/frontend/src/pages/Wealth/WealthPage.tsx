@@ -33,7 +33,7 @@ import { PropertyMap } from '../../components/PropertyMap.js';
 import { SkeletonChart, SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 function SummaryTile({
   label,
@@ -229,7 +229,7 @@ function PropertiesSection() {
                       <button onClick={() => handleArchive(property.id)} className={BTN_ROW_ACTION}>
                         Archive
                       </button>
-                      <button onClick={() => handleDelete(property)} className={BTN_ROW_ACTION}>
+                      <button onClick={() => handleDelete(property)} className={BTN_ROW_ACTION_DANGER}>
                         Delete
                       </button>
                     </div>
@@ -443,7 +443,7 @@ function LiabilitiesSection() {
                       Archive
                     </button>
                   )}
-                  <button onClick={() => handleDelete(liability)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => handleDelete(liability)} className={BTN_ROW_ACTION_DANGER}>
                     Delete
                   </button>
                 </div>

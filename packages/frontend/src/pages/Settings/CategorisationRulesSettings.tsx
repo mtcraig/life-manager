@@ -19,7 +19,7 @@ import {
   useRecategoriseUncategorised,
   useUpdateCategorisationRule,
 } from '../../hooks/useCategorisationRules.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 const NEW_CATEGORY_VALUE = '__new__';
 const NEW_VENDOR_VALUE = '__new__';
@@ -589,7 +589,7 @@ export function CategorisationRulesSettings() {
                   <button onClick={() => startEditing(rule)} className={BTN_ROW_ACTION}>
                     Edit
                   </button>
-                  <button onClick={() => deleteRule.mutate(rule.id)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => deleteRule.mutate(rule.id)} className={BTN_ROW_ACTION_DANGER}>
                     Delete
                   </button>
                 </div>
