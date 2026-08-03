@@ -53,6 +53,26 @@ export function InvestmentsIcon() {
   );
 }
 
+export function BudgetsIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 15h3" />
+    </svg>
+  );
+}
+
+export function SubscriptionsIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M8 2v4M16 2v4" />
+      <path d="M4 10h16" />
+    </svg>
+  );
+}
+
 export function ForecastIcon() {
   return (
     <svg {...ICON_PROPS}>

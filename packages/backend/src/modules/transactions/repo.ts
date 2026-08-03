@@ -331,6 +331,35 @@ export function listTopTransactionsByAmount(params: {
     .all();
 }
 
+export interface CategorisedAmountWithTransferFlagRow {
+  categoryId: number | null;
+  amount: number;
+  isTransfer: boolean;
+}
+
+/**
+ * Flat (categoryId, amount, isTransfer) rows for a date range — the input to
+ * Budgets' actual-spend-by-category calculation, which needs the transfer
+ * flag to exclude transfers the same way getMoneyFlow does.
+ */
+export function listCategorisedTransactionAmountsWithTransferFlag(params: {
+  dateFrom: string;
+  dateTo: string;
+}): CategorisedAmountWithTransferFlagRow[] {
+  const rows = db
+    .select({
+      categoryId: transactions.categoryId,
+      amount: transactions.amount,
+      isTransfer: categories.isTransfer,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(gte(transactions.date, params.dateFrom), lte(transactions.date, params.dateTo)))
+    .all();
+
+  return rows.map((row) => ({ ...row, isTransfer: row.isTransfer ?? false }));
+}
+
 export interface RecurringAnalysisRow {
   date: string;
   amount: number;
