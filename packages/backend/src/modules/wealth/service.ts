@@ -1,11 +1,15 @@
-import type { WealthSummaryDto } from '@life-manager/shared';
+import type { NetWorthTrendPointDto, WealthSummaryDto } from '@life-manager/shared';
 import * as accountsRepo from '../accounts/repo';
 import * as analyticsService from '../analytics/service';
 import * as investmentsRepo from '../investments/repo';
 import * as propertiesRepo from '../properties/repo';
 import * as liabilitiesRepo from '../liabilities/repo';
 import * as contentsRepo from '../contents/repo';
+import * as transactionsRepo from '../transactions/repo';
 import { computeWealthSummary, sumLatestValuations } from '../../lib/calculations/wealth';
+import { computeBalanceTrend } from '../../lib/calculations/balanceTrend';
+import { buildMonthlyDateAxis, computeNetWorthTrend } from '../../lib/calculations/netWorthTrend';
+import type { AccountBalanceSeries } from '../../lib/calculations/netWorthTrend';
 
 /**
  * credit_card accounts are liabilities, not liquid assets — their current
@@ -59,5 +63,59 @@ export function getWealthSummary(): WealthSummaryDto {
     propertiesTotal,
     contentsTotal,
     liabilitiesTotal,
+  });
+}
+
+/**
+ * Net worth reindexed onto a monthly date axis, from the earliest data point
+ * (across transactions and valuations) through today. See netWorthTrend.ts
+ * for the reindexing/forward-fill approach and its known simplifications
+ * (archived entities excluded uniformly using today's state, contents held
+ * constant throughout since it has no history at all).
+ */
+export function getNetWorthTrend(): NetWorthTrendPointDto[] {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const allAccounts = accountsRepo.listAccounts();
+  const accountSeries: AccountBalanceSeries[] = allAccounts.map((account) => ({
+    accountId: account.id,
+    isCreditCard: account.type === 'credit_card',
+    points: computeBalanceTrend(
+      transactionsRepo.listTransactionAmountsWithTransferFlag({ accountId: account.id }),
+    ),
+  }));
+
+  const investmentValuations = investmentsRepo.listAllValuationRows();
+  const propertyValuations = propertiesRepo.listAllValuationRows();
+  const liabilityValuations = liabilitiesRepo.listAllValuationRows();
+
+  const activeInvestmentIds = investmentsRepo.listInvestments(false).map((i) => i.id);
+  const activePropertyIds = propertiesRepo.listProperties(false).map((p) => p.id);
+  const activeLiabilityIds = liabilitiesRepo.listLiabilities(false).map((l) => l.id);
+
+  const contentsTotal = contentsRepo.sumAllValues();
+
+  const earliestTransactionDate = transactionsRepo.getEarliestTransactionDate();
+  const earliestValuationDate = [...investmentValuations, ...propertyValuations, ...liabilityValuations]
+    .map((row) => row.asOfDate)
+    .sort()[0];
+  const earliestDate = [earliestTransactionDate, earliestValuationDate]
+    .filter((date): date is string => date !== null && date !== undefined)
+    .sort()[0];
+
+  if (!earliestDate) return [];
+
+  const dateAxis = buildMonthlyDateAxis(earliestDate, today);
+
+  return computeNetWorthTrend({
+    dateAxis,
+    accountSeries,
+    investmentValuations,
+    activeInvestmentIds,
+    propertyValuations,
+    activePropertyIds,
+    liabilityValuations,
+    activeLiabilityIds,
+    contentsTotal,
   });
 }

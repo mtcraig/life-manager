@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CreateLiabilityInput, CreatePropertyInput } from '@life-manager/shared';
-import { useWealthSummary } from '../../hooks/useWealth.js';
+import { useNetWorthTrend, useWealthSummary } from '../../hooks/useWealth.js';
+import { NetWorthTrendChart } from '../../components/charts/NetWorthTrendChart.js';
 import {
   useArchiveProperty,
   useAddPropertyValuation,
@@ -29,7 +30,7 @@ import {
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { PropertyMap } from '../../components/PropertyMap.js';
-import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
+import { SkeletonChart, SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
@@ -467,10 +468,21 @@ function LiabilitiesSection() {
 
 export function WealthPage() {
   const { data: summary, isPending, isError } = useWealthSummary();
+  const { data: trend, isPending: isTrendPending, isError: isTrendError } = useNetWorthTrend();
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Wealth</h1>
+
+      <div className="card-surface p-4">
+        <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Net worth over time</h2>
+        {isTrendPending && <SkeletonChart className="h-56 w-full" />}
+        {isTrendError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the net worth trend.</p>}
+        {trend && trend.length > 1 && <NetWorthTrendChart points={trend} />}
+        {trend && trend.length <= 1 && (
+          <p className="text-sm text-slate-500">Not enough history yet to chart a trend.</p>
+        )}
+      </div>
 
       {isPending && <SkeletonStatGrid count={4} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the wealth summary.</p>}

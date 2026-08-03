@@ -143,6 +143,18 @@ export function deleteValuation(liabilityId: number, valuationId: number): boole
   return result.changes > 0;
 }
 
+/** Every valuation row across every liability, unfiltered — the input to the net-worth trend's "value as of a past date" calculation, which needs full history rather than just the latest. */
+export function listAllValuationRows(): { entityId: number; asOfDate: string; value: number }[] {
+  return db
+    .select({
+      entityId: liabilityValuations.liabilityId,
+      asOfDate: liabilityValuations.asOfDate,
+      value: liabilityValuations.value,
+    })
+    .from(liabilityValuations)
+    .all();
+}
+
 /**
  * Latest recorded value per liability (by as_of_date), across every liability —
  * used for both the per-liability "currentValue" list field and the Wealth

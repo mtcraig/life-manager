@@ -164,6 +164,18 @@ export function listAllValuationsWithNames(): ValuationWithInvestmentName[] {
     .all();
 }
 
+/** Every valuation row across every investment, unfiltered — the input to the net-worth trend's "value as of a past date" calculation, which needs full history rather than just the latest. */
+export function listAllValuationRows(): { entityId: number; asOfDate: string; value: number }[] {
+  return db
+    .select({
+      entityId: investmentValuations.investmentId,
+      asOfDate: investmentValuations.asOfDate,
+      value: investmentValuations.value,
+    })
+    .from(investmentValuations)
+    .all();
+}
+
 /**
  * Latest recorded value per investment (by as_of_date), across every investment —
  * used for both the per-investment "currentValue" list field and the Wealth
