@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CreateValuationInput, UpdateValuationInput, ValuationDto } from '@life-manager/shared';
 import { ValuationTrendChart } from './charts/ValuationTrendChart.js';
+import { SkeletonRows } from './Skeleton.js';
 import { formatMoney } from '../lib/formatMoney.js';
 import { BTN_ROW_ACTION } from '../theme/tokens.js';
 
@@ -122,7 +123,7 @@ export function ValuationHistoryPanel({
 
   return (
     <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={2} />}
       {valuations && valuations.length === 0 && (
         <p className="text-sm text-slate-500">No valuations recorded yet.</p>
       )}

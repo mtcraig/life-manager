@@ -3,6 +3,8 @@ import { useQueries } from '@tanstack/react-query';
 import type { AccountDto } from '@life-manager/shared';
 import { BalanceTrendChart } from '../../components/charts/BalanceTrendChart.js';
 import { CategorySpendingChart } from '../../components/charts/CategorySpendingChart.js';
+import { Sparkline } from '../../components/charts/Sparkline.js';
+import { Skeleton, SkeletonChart, SkeletonRows } from '../../components/Skeleton.js';
 import { YearFilter as YearFilterControl } from '../../components/YearFilter.js';
 import { useAccounts } from '../../hooks/useAccounts.js';
 import {
@@ -38,11 +40,11 @@ function CategorySpendingSection({
   });
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="card-surface p-4">
       <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
         Spending by category ({selectedYear === 'all' ? 'all time' : selectedYear})
       </h2>
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonChart className="h-56 w-full" />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load category spending.</p>}
       {rows && rows.length === 0 && (
         <p className="text-sm text-slate-500">
@@ -66,16 +68,16 @@ function AllAccountsSummary({ accounts, selectedYear }: { accounts: AccountDto[]
   const balances = accounts.map((account, i) => {
     const trend = balanceQueries[i]?.data;
     const latest = trend && trend.length > 0 ? trend[trend.length - 1] : undefined;
-    return { account, balance: latest?.balance ?? 0 };
+    return { account, balance: latest?.balance ?? 0, trend };
   });
   const combinedBalance = balances.reduce((sum, b) => sum + b.balance, 0);
 
   return (
     <>
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="card-surface p-4">
         <div className="text-xs uppercase tracking-wide text-slate-500">Combined balance</div>
         {isPending ? (
-          <p className="mt-1 text-sm text-slate-500">Loading…</p>
+          <Skeleton className="mt-1 h-8 w-40" />
         ) : (
           <div
             className={`mt-1 text-2xl font-semibold ${
@@ -87,19 +89,22 @@ function AllAccountsSummary({ accounts, selectedYear }: { accounts: AccountDto[]
         )}
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="card-surface p-4">
         <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Per-account balances</h2>
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-          {balances.map(({ account, balance }) => (
-            <li key={account.id} className="flex items-center justify-between py-2 text-sm">
+          {balances.map(({ account, balance, trend }) => (
+            <li key={account.id} className="flex items-center justify-between gap-4 py-2 text-sm">
               <span className="text-slate-700 dark:text-slate-300">
                 {account.name}
                 {account.institution && (
                   <span className={`ml-2 text-xs ${INSTITUTION_CLASS}`}>{account.institution}</span>
                 )}
               </span>
-              <span className={`font-medium ${accountBalanceClass(account.type, balance)}`}>
-                {formatMoney(balance)}
+              <span className="flex items-center gap-3">
+                <span className="flex w-24 shrink-0 justify-end">{trend && <Sparkline points={trend} />}</span>
+                <span className={`w-32 shrink-0 text-right font-medium ${accountBalanceClass(account.type, balance)}`}>
+                  {formatMoney(balance)}
+                </span>
               </span>
             </li>
           ))}
@@ -139,7 +144,7 @@ function AccountDetail({
 
   return (
     <>
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="card-surface p-4">
         <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {account.name}
           {account.institution && (
@@ -148,15 +153,18 @@ function AccountDetail({
         </h2>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <div className="text-xs uppercase tracking-wide text-slate-500">{balanceLabel}</div>
-        <div className={`mt-1 text-2xl font-semibold ${accountBalanceClass(account.type, currentBalance)}`}>
-          {formatMoney(currentBalance)}
+      <div className="card-surface flex items-center justify-between gap-4 p-4">
+        <div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">{balanceLabel}</div>
+          <div className={`mt-1 text-2xl font-semibold ${accountBalanceClass(account.type, currentBalance)}`}>
+            {formatMoney(currentBalance)}
+          </div>
         </div>
+        {trend && trend.length > 1 && <Sparkline points={trend} width={120} height={40} />}
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        {isTrendPending && <p className="text-sm text-slate-500">Loading…</p>}
+      <div className="card-surface p-4">
+        {isTrendPending && <SkeletonChart className="h-56 w-full" />}
         {isTrendError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load balance trend.</p>}
         {trend && trend.length === 0 && (
           <p className="text-sm text-slate-500">No transactions ingested for this account yet.</p>
@@ -190,7 +198,7 @@ export function AccountsPage() {
         <YearFilterControl selectedYear={selectedYear} onChange={setSelectedYear} earliestYear={earliestYear} />
       </div>
 
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={4} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load accounts.</p>}
       {accounts && accounts.length === 0 && (
         <p className="text-sm text-slate-500">

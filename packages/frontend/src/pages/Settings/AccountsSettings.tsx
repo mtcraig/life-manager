@@ -17,6 +17,7 @@ import {
 } from '../../hooks/useAccounts.js';
 import { useJob } from '../../hooks/useJobs.js';
 import { JobProgressBar } from '../../components/JobProgressBar.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
@@ -387,7 +388,7 @@ export function AccountsSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add account</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <AccountFormFields draft={draft} onChange={(patch) => setDraft({ ...draft, ...patch })} />
@@ -400,7 +401,7 @@ export function AccountsSettings() {
         </form>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Accounts</h2>
         {ingestJobId !== null && (
           <div className="mb-2">
@@ -422,7 +423,7 @@ export function AccountsSettings() {
             ))}
           </ul>
         )}
-        {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+        {isPending && <SkeletonRows rows={3} />}
         {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load accounts.</p>}
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {accounts?.map((account: AccountDto) =>

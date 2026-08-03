@@ -15,7 +15,7 @@ function GithubLogo({ className }: { className?: string }) {
 
 export function SupportSettings() {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Support this project</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <a
