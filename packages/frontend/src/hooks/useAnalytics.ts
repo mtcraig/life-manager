@@ -22,10 +22,10 @@ export function useMoneyFlow(query: Partial<MoneyFlowQuery>) {
   });
 }
 
-export function useAccountBalanceTrend(query: AccountBalanceTrendQuery) {
+export function useAccountBalanceTrend(query: Partial<AccountBalanceTrendQuery>) {
   return useQuery({
     queryKey: ['analytics', 'account-balance-trend', query],
-    queryFn: () => fetchAccountBalanceTrend(query),
+    queryFn: () => fetchAccountBalanceTrend(query as AccountBalanceTrendQuery),
     enabled: query.accountId !== undefined,
   });
 }

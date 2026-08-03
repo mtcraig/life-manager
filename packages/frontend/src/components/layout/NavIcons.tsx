@@ -53,6 +53,15 @@ export function InvestmentsIcon() {
   );
 }
 
+export function ForecastIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M4 17 9 11l4 3 7-8" />
+      <path d="M4 20h16" />
+    </svg>
+  );
+}
+
 export function InsuranceIcon() {
   return (
     <svg {...ICON_PROPS}>
