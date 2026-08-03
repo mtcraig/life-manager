@@ -10,6 +10,11 @@ export function fetchBudgetProgress(date?: string) {
   return apiFetch<BudgetProgressDto>(`/budgets/progress${query}`);
 }
 
+export function fetchAnnualBudgetProgress(year?: number) {
+  const query = year ? `?year=${year}` : '';
+  return apiFetch<BudgetProgressDto>(`/budgets/progress/annual${query}`);
+}
+
 export function createBudget(input: CreateBudgetInput) {
   return apiFetch<BudgetDto>('/budgets', {
     method: 'POST',

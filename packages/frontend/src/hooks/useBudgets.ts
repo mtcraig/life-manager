@@ -19,6 +19,13 @@ export function useBudgetProgress(date: string) {
   });
 }
 
+export function useAnnualBudgetProgress(year: number) {
+  return useQuery({
+    queryKey: ['budget-progress', 'annual', year],
+    queryFn: () => budgetsApi.fetchAnnualBudgetProgress(year),
+  });
+}
+
 export function useCreateBudget() {
   const queryClient = useQueryClient();
   return useMutation({

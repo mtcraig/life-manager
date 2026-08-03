@@ -44,3 +44,8 @@ export const budgetProgressQuerySchema = z.object({
   date: z.string().optional(),
 });
 export type BudgetProgressQuery = z.infer<typeof budgetProgressQuerySchema>;
+
+export const annualBudgetProgressQuerySchema = z.object({
+  year: z.coerce.number().int().positive().optional(),
+});
+export type AnnualBudgetProgressQuery = z.infer<typeof annualBudgetProgressQuerySchema>;
