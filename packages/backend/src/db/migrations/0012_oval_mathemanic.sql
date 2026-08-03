@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` ADD `credit_card_balance_sign_fixed_at` integer;

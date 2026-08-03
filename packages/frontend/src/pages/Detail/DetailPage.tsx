@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useAccounts } from '../../hooks/useAccounts.js';
 import { useCategories } from '../../hooks/useCategories.js';
 import { useVendors } from '../../hooks/useVendors.js';
-import { useTransactions, useUpdateTransactionCategory } from '../../hooks/useTransactions.js';
+import {
+  useTransactions,
+  useUpdateTransactionCategory,
+  useUpdateTransactionVendor,
+} from '../../hooks/useTransactions.js';
 import { transactionExportUrl } from '../../api/transactions.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY } from '../../theme/tokens.js';
@@ -12,7 +16,9 @@ export function DetailPage() {
   const { data: categories } = useCategories();
   const { data: vendors } = useVendors();
   const updateCategory = useUpdateTransactionCategory();
+  const updateVendor = useUpdateTransactionVendor();
   const [accountId, setAccountId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [vendorId, setVendorId] = useState<string>('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -21,6 +27,7 @@ export function DetailPage() {
 
   const { data, isPending, isError } = useTransactions({
     accountId: accountId ? Number(accountId) : undefined,
+    categoryId: categoryId ? Number(categoryId) : undefined,
     vendorId: vendorId ? Number(vendorId) : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
@@ -30,7 +37,6 @@ export function DetailPage() {
   });
 
   const accountNameById = new Map(accounts?.map((a) => [a.id, a.name]));
-  const vendorNameById = new Map(vendors?.map((v) => [v.id, v.name]));
 
   return (
     <div className="space-y-4">
@@ -51,6 +57,24 @@ export function DetailPage() {
             {accounts?.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Category
+          <select
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setPage(1);
+            }}
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          >
+            <option value="">All categories</option>
+            {categories?.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
               </option>
             ))}
           </select>
@@ -111,6 +135,7 @@ export function DetailPage() {
         <a
           href={transactionExportUrl({
             accountId: accountId ? Number(accountId) : undefined,
+            categoryId: categoryId ? Number(categoryId) : undefined,
             vendorId: vendorId ? Number(vendorId) : undefined,
             dateFrom: dateFrom || undefined,
             dateTo: dateTo || undefined,
@@ -169,8 +194,24 @@ export function DetailPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-2 text-slate-500 dark:text-slate-400">
-                      {tx.vendorId !== null ? vendorNameById.get(tx.vendorId) ?? '—' : '—'}
+                    <td className="px-4 py-2">
+                      <select
+                        value={tx.vendorId ?? ''}
+                        onChange={(e) =>
+                          updateVendor.mutate({
+                            id: tx.id,
+                            input: { vendorId: e.target.value ? Number(e.target.value) : null },
+                          })
+                        }
+                        className="rounded-md border border-slate-300 px-1.5 py-0.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        <option value="">Unassigned</option>
+                        {vendors?.map((vendor) => (
+                          <option key={vendor.id} value={vendor.id}>
+                            {vendor.name}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td
                       className={`px-4 py-2 text-right ${

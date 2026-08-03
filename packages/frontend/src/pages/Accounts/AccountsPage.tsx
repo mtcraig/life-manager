@@ -17,10 +17,9 @@ import { dateRangeForYear } from '../../lib/yearFilter.js';
 
 const INSTITUTION_CLASS = 'text-indigo-600 dark:text-indigo-400 font-medium';
 
-/** savings -> amber, credit_card -> always red (it's a liability), everything else by sign. */
+/** savings -> amber, everything else (including credit_card, now correctly signed negative when owed) by sign. */
 function accountBalanceClass(type: AccountDto['type'], balance: number): string {
   if (type === 'savings') return 'text-amber-600 dark:text-amber-400';
-  if (type === 'credit_card') return 'text-red-600 dark:text-red-400';
   return balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 }
 

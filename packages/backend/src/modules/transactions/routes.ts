@@ -3,6 +3,7 @@ import {
   transactionExportQuerySchema,
   transactionListQuerySchema,
   updateTransactionCategorySchema,
+  updateTransactionVendorSchema,
 } from '@life-manager/shared';
 import { z } from 'zod';
 import * as service from './service';
@@ -29,5 +30,11 @@ export async function transactionRoutes(app: FastifyInstance) {
     const { id } = idParamSchema.parse(request.params);
     const input = updateTransactionCategorySchema.parse(request.body);
     return service.updateTransactionCategory(id, input);
+  });
+
+  app.patch('/transactions/:id/vendor', async (request) => {
+    const { id } = idParamSchema.parse(request.params);
+    const input = updateTransactionVendorSchema.parse(request.body);
+    return service.updateTransactionVendor(id, input);
   });
 }

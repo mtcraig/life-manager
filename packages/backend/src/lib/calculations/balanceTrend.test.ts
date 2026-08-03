@@ -62,6 +62,30 @@ describe('computeBalanceTrend', () => {
     expect(result).toEqual([{ date: '2026-01-01', balance: 1250, confirmed: true }]);
   });
 
+  it('picks the same-day balance closest to the naive projection, not the last in input order, once a prior confirmed balance exists', () => {
+    // Reproduces a real bug: a bank export lists a day's transactions
+    // newest-first, so the last row by (date, id) is actually the day's
+    // *first* transaction, and its balance is a stale, too-high mid-day
+    // figure. The account's own last transaction of the day (-100) is
+    // correct; the naive projection (1000 - 1200 + 100 = -100) picks it.
+    const result = computeBalanceTrend([
+      { date: '2026-01-01', amount: 0, balanceAfter: 1000 },
+      { date: '2026-01-02', amount: -1200, balanceAfter: -100 },
+      { date: '2026-01-02', amount: 100, balanceAfter: 1100 },
+    ]);
+    expect(result[1]).toEqual({ date: '2026-01-02', balance: -100, confirmed: true });
+  });
+
+  it('resolves 3+ same-day candidates in arbitrary input order the same way', () => {
+    const result = computeBalanceTrend([
+      { date: '2026-01-01', amount: 0, balanceAfter: 1000 },
+      { date: '2026-01-02', amount: -2000, balanceAfter: -750 },
+      { date: '2026-01-02', amount: 50, balanceAfter: 1050 },
+      { date: '2026-01-02', amount: 200, balanceAfter: 1250 },
+    ]);
+    expect(result[1]).toEqual({ date: '2026-01-02', balance: -750, confirmed: true });
+  });
+
   it('carries the running total forward via deltas after the last known snap', () => {
     const result = computeBalanceTrend([
       { date: '2026-01-01', amount: 1000, balanceAfter: 5000 },

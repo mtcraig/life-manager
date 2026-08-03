@@ -14,6 +14,10 @@ export const accounts = sqliteTable('accounts', {
   // negated this account's existing transaction amounts. Prevents re-running it twice
   // and flipping an already-corrected account back to the wrong sign.
   creditCardSignFixedAt: integer('credit_card_sign_fixed_at'),
+  // Same idea as creditCardSignFixedAt, but for balanceAfter (see
+  // backfillCreditCardBalanceSign) — a separate flag since balanceAfter wasn't part
+  // of the original backfill and accounts may already be marked fixed for amount only.
+  creditCardBalanceSignFixedAt: integer('credit_card_balance_sign_fixed_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });

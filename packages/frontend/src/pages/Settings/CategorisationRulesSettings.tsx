@@ -37,6 +37,8 @@ export function CategorisationRulesSettings() {
   const reapplyAll = useReapplyAllRules();
   const queryClient = useQueryClient();
 
+  const [showBulkImport, setShowBulkImport] = useState(false);
+
   const [recategoriseJobId, setRecategoriseJobId] = useState<number | null>(null);
   const { data: recategoriseJob } = useJob(recategoriseJobId);
 
@@ -370,65 +372,72 @@ export function CategorisationRulesSettings() {
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Bulk import from spreadsheet CSV
-        </h2>
-        <form onSubmit={handleBulkImport} className="space-y-3">
-          <label className="block text-sm text-slate-700 dark:text-slate-300">
-            CSV content
-            <textarea
-              required
-              value={csvContent}
-              onChange={(e) => setCsvContent(e.target.value)}
-              rows={6}
-              placeholder="Pattern,Category,Vendor&#10;tesco,Groceries,Tesco&#10;..."
-              className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="text-sm text-slate-700 dark:text-slate-300">
-              Pattern column header
-              <input
-                value={patternColumn}
-                onChange={(e) => setPatternColumn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </label>
-            <label className="text-sm text-slate-700 dark:text-slate-300">
-              Category column header
-              <input
-                value={categoryColumn}
-                onChange={(e) => setCategoryColumn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </label>
-            <label className="text-sm text-slate-700 dark:text-slate-300">
-              Vendor column header
-              <input
-                value={vendorColumn}
-                onChange={(e) => setVendorColumn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </label>
-            <label className="text-sm text-slate-700 dark:text-slate-300">
-              Match type column header (optional)
-              <input
-                value={matchTypeColumn}
-                onChange={(e) => setMatchTypeColumn(e.target.value)}
-                placeholder="defaults to fuzzy"
-                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </label>
-          </div>
-          {importMessage && <p className="text-sm text-slate-600 dark:text-slate-400">{importMessage}</p>}
-          <button
-            type="submit"
-            disabled={bulkImport.isPending}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            {bulkImport.isPending ? 'Importing…' : 'Import rules'}
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Bulk import from spreadsheet CSV
+          </h2>
+          <button onClick={() => setShowBulkImport((v) => !v)} className={BTN_ROW_ACTION}>
+            {showBulkImport ? 'Hide import' : 'Import'}
           </button>
-        </form>
+        </div>
+        {showBulkImport && (
+          <form onSubmit={handleBulkImport} className="space-y-3">
+            <label className="block text-sm text-slate-700 dark:text-slate-300">
+              CSV content
+              <textarea
+                required
+                value={csvContent}
+                onChange={(e) => setCsvContent(e.target.value)}
+                rows={6}
+                placeholder="Pattern,Category,Vendor&#10;tesco,Groceries,Tesco&#10;..."
+                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-sm text-slate-700 dark:text-slate-300">
+                Pattern column header
+                <input
+                  value={patternColumn}
+                  onChange={(e) => setPatternColumn(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </label>
+              <label className="text-sm text-slate-700 dark:text-slate-300">
+                Category column header
+                <input
+                  value={categoryColumn}
+                  onChange={(e) => setCategoryColumn(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </label>
+              <label className="text-sm text-slate-700 dark:text-slate-300">
+                Vendor column header
+                <input
+                  value={vendorColumn}
+                  onChange={(e) => setVendorColumn(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </label>
+              <label className="text-sm text-slate-700 dark:text-slate-300">
+                Match type column header (optional)
+                <input
+                  value={matchTypeColumn}
+                  onChange={(e) => setMatchTypeColumn(e.target.value)}
+                  placeholder="defaults to fuzzy"
+                  className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </label>
+            </div>
+            {importMessage && <p className="text-sm text-slate-600 dark:text-slate-400">{importMessage}</p>}
+            <button
+              type="submit"
+              disabled={bulkImport.isPending}
+              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              {bulkImport.isPending ? 'Importing…' : 'Import rules'}
+            </button>
+          </form>
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
