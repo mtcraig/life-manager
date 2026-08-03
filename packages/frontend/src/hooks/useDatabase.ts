@@ -18,3 +18,15 @@ export function useResetDatabase() {
     },
   });
 }
+
+/** Same full-reload rationale as useResetDatabase — importing replaces every table. */
+export function useImportDatabase() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => databaseApi.importDatabase(file),
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = '/';
+    },
+  });
+}

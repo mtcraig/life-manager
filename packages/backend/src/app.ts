@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import { registerCors } from './plugins/cors';
 import { registerErrorHandler } from './plugins/errorHandler';
 import { healthRoutes } from './modules/health/routes';
@@ -31,6 +32,8 @@ export async function buildFastifyApp() {
 
   registerErrorHandler(app);
   await registerCors(app);
+  // Database import uploads a raw .db file; other routes only ever receive JSON.
+  await app.register(multipart, { limits: { fileSize: 200 * 1024 * 1024, files: 1 } });
 
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(accountRoutes, { prefix: '/api' });
