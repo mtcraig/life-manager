@@ -138,6 +138,14 @@ export function deleteValuation(propertyId: number, valuationId: number): boolea
   return result.changes > 0;
 }
 
+/** Every valuation row across every property, unfiltered — the input to the net-worth trend's "value as of a past date" calculation, which needs full history rather than just the latest. */
+export function listAllValuationRows(): { entityId: number; asOfDate: string; value: number }[] {
+  return db
+    .select({ entityId: propertyValuations.propertyId, asOfDate: propertyValuations.asOfDate, value: propertyValuations.value })
+    .from(propertyValuations)
+    .all();
+}
+
 /**
  * Latest recorded value per property (by as_of_date), across every property —
  * used for both the per-property "currentValue" list field and the Wealth

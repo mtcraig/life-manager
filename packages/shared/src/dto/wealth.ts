@@ -13,3 +13,13 @@ export interface WealthSummaryDto {
   liabilitiesTotal: number;
   netWealth: number;
 }
+
+export interface NetWorthTrendPointDto {
+  date: string; // ISO YYYY-MM-DD, a month-end (or today, for the final/current point)
+  accountsTotal: number;
+  investmentsTotal: number;
+  propertiesTotal: number;
+  liabilitiesTotal: number;
+  contentsTotal: number;
+  netWorth: number;
+}

@@ -7,3 +7,10 @@ export function useWealthSummary() {
     queryFn: () => wealthApi.fetchWealthSummary(),
   });
 }
+
+export function useNetWorthTrend() {
+  return useQuery({
+    queryKey: ['wealth', 'trend'],
+    queryFn: () => wealthApi.fetchNetWorthTrend(),
+  });
+}
