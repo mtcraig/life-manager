@@ -70,9 +70,9 @@ export function CategorySpendingChart({ rows }: CategorySpendingChartProps) {
         />
         <Tooltip
           formatter={(value: number) => formatMoney(value)}
-          contentStyle={{ backgroundColor: colors.tooltipBg, border: `1px solid ${colors.tooltipBorder}` }}
-          itemStyle={{ color: colors.tooltipText }}
-          labelStyle={{ color: colors.tooltipText }}
+          contentStyle={{ backgroundColor: colors.tooltipBg, border: `1px solid ${colors.tooltipBorder}`, fontSize: 11 }}
+          itemStyle={{ color: colors.tooltipText, fontSize: 11, padding: 0 }}
+          labelStyle={{ color: colors.tooltipText, fontSize: 11, marginBottom: 2 }}
         />
         <Legend wrapperStyle={{ fontSize: 12, color: colors.tick }} />
         {categoryKeys.map((key, i) => {

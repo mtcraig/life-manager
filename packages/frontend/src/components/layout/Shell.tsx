@@ -2,17 +2,28 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle.js';
 import { ServerStatus } from './ServerStatus.js';
 import { ExitButton } from './ExitButton.js';
+import {
+  AccountsIcon,
+  ContentsIcon,
+  DetailIcon,
+  EnergyIcon,
+  HomeIcon,
+  InsuranceIcon,
+  InvestmentsIcon,
+  SettingsIcon,
+  WealthIcon,
+} from './NavIcons.js';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Home', end: true },
-  { to: '/accounts', label: 'Accounts' },
-  { to: '/detail', label: 'Detail' },
-  { to: '/wealth', label: 'Wealth' },
-  { to: '/investments', label: 'Investments' },
-  { to: '/insurance', label: 'Insurance' },
-  { to: '/energy', label: 'Energy' },
-  { to: '/contents', label: 'Contents' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/', label: 'Home', end: true, icon: HomeIcon },
+  { to: '/accounts', label: 'Accounts', icon: AccountsIcon },
+  { to: '/detail', label: 'Detail', icon: DetailIcon },
+  { to: '/wealth', label: 'Wealth', icon: WealthIcon },
+  { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
+  { to: '/insurance', label: 'Insurance', icon: InsuranceIcon },
+  { to: '/energy', label: 'Energy', icon: EnergyIcon },
+  { to: '/contents', label: 'Contents', icon: ContentsIcon },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ];
 
 export function Shell() {
@@ -43,13 +54,14 @@ export function Shell() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `block rounded-md px-3 py-2 text-sm font-medium ${
+                  `flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                     isActive
                       ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                      : 'flair-underline text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                   }`
                 }
               >
+                <item.icon />
                 {item.label}
               </NavLink>
             </li>

@@ -1,4 +1,5 @@
 import { PagedListFooter } from '../../components/PagedListFooter.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { useAccounts } from '../../hooks/useAccounts.js';
 import { useIngestionEvents } from '../../hooks/useIngestionEvents.js';
 import { usePagedList } from '../../hooks/usePagedList.js';
@@ -11,9 +12,9 @@ export function IngestionHistorySettings() {
   const pagedEvents = usePagedList(events);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Ingestion history</h2>
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={3} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load ingestion history.</p>}
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {pagedEvents.visible.map((event) => (

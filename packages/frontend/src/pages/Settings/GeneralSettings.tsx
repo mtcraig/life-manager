@@ -17,7 +17,7 @@ export function GeneralSettings() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">General</h2>
       <form onSubmit={handleSubmit} className="flex items-end gap-3">
         <label className="text-sm text-slate-700 dark:text-slate-300">

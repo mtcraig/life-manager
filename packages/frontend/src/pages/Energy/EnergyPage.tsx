@@ -8,6 +8,7 @@ import {
   useEnergyReadings,
 } from '../../hooks/useEnergy.js';
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
@@ -176,7 +177,7 @@ function ReadingsList() {
   const { data: readings, isPending, isError } = useEnergyReadings();
   const deleteReading = useDeleteEnergyReading();
 
-  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isPending) return <SkeletonRows rows={3} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load energy readings.</p>;
   if (!readings || readings.length === 0) {
     return <p className="text-sm text-slate-500">No readings yet — add one above.</p>;
@@ -222,7 +223,7 @@ function UsageCharts() {
         return (
           <div
             key={meterType}
-            className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+            className="card-surface p-4"
           >
             <h3 className="mb-2 text-sm font-semibold capitalize text-slate-900 dark:text-slate-100">
               {meterType}
@@ -244,12 +245,12 @@ export function EnergyPage() {
 
       <UsageCharts />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add reading</h2>
         <AddReadingForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Bulk import (CSV)</h2>
           <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
@@ -259,7 +260,7 @@ export function EnergyPage() {
         {showImport && <BulkImportForm />}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Readings</h2>
         <ReadingsList />
       </section>

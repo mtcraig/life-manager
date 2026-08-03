@@ -7,6 +7,7 @@ import {
   useDeleteInsurancePlan,
   useInsurancePlans,
 } from '../../hooks/useInsurance.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
@@ -220,7 +221,7 @@ function InsurancePlansList() {
   const deletePlan = useDeleteInsurancePlan();
   const cancelPlan = useCancelInsurancePlan();
 
-  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isPending) return <SkeletonRows rows={3} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load insurance plans.</p>;
   if (!plans || plans.length === 0) {
     return <p className="text-sm text-slate-500">No insurance plans yet — add one above.</p>;
@@ -274,12 +275,12 @@ export function InsurancePage() {
         Informational only — insurance plans don't feed into the Wealth totals.
       </p>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add plan</h2>
         <AddInsurancePlanForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Plans</h2>
         <InsurancePlansList />
       </section>

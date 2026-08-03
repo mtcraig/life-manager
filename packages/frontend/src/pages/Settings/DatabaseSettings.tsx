@@ -22,7 +22,7 @@ export function DatabaseSettings() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Backup</h3>
         <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
           Download a copy of the current database file. See the README for how to restore it.

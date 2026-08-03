@@ -8,6 +8,7 @@ import {
   useDeleteContentsItem,
 } from '../../hooks/useContents.js';
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
@@ -37,7 +38,7 @@ function AreaManager() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Areas</h2>
       <form onSubmit={handleSubmit} className="mb-3 flex items-end gap-3">
         <label className="text-sm text-slate-700 dark:text-slate-300">
@@ -56,7 +57,7 @@ function AreaManager() {
       {error && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
       {isError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">Failed to load areas.</p>}
       {isPending ? (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <SkeletonRows rows={2} />
       ) : (
         <ul className="flex flex-wrap gap-2">
           {areas?.map((area) => (
@@ -188,7 +189,7 @@ function ContentsItemsList() {
 
   const areaNameById = new Map((areas ?? []).map((area) => [area.id, area.name]));
 
-  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isPending) return <SkeletonRows rows={4} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load contents items.</p>;
   if (!items || items.length === 0) {
     return <p className="text-sm text-slate-500">No contents items yet — add one above.</p>;
@@ -272,12 +273,12 @@ export function ContentsPage() {
 
       <AreaManager />
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add item</h2>
         <AddContentsItemForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Items</h2>
           <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>

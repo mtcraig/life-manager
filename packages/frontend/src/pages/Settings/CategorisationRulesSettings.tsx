@@ -4,6 +4,7 @@ import { MATCH_TYPES } from '@life-manager/shared';
 import type { CategorisationRuleDto, CreateCategorisationRuleInput } from '@life-manager/shared';
 import { PagedListFooter } from '../../components/PagedListFooter.js';
 import { JobProgressBar } from '../../components/JobProgressBar.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { useCategories, useCreateCategory } from '../../hooks/useCategories.js';
 import { useCreateVendor, useVendors } from '../../hooks/useVendors.js';
@@ -272,7 +273,7 @@ export function CategorisationRulesSettings() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add categorisation rule</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -371,7 +372,7 @@ export function CategorisationRulesSettings() {
         </form>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             Bulk import from spreadsheet CSV
@@ -440,7 +441,7 @@ export function CategorisationRulesSettings() {
         )}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Rules</h2>
           <div className="flex gap-2">
@@ -469,7 +470,7 @@ export function CategorisationRulesSettings() {
         {recategoriseMessage && (
           <p className="mb-2 text-sm text-slate-600 dark:text-slate-400">{recategoriseMessage}</p>
         )}
-        {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+        {isPending && <SkeletonRows rows={5} />}
         {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load categorisation rules.</p>}
         <ul className="divide-y divide-slate-100 dark:divide-slate-800">
           {pagedRules.visible.map((rule: CategorisationRuleDto) =>

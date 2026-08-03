@@ -28,6 +28,7 @@ import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { HoldingsByMonthChart } from '../../components/charts/HoldingsByMonthChart.js';
 import { YearFilter as YearFilterControl } from '../../components/YearFilter.js';
+import { SkeletonChart, SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import type { YearFilterValue } from '../../lib/yearFilter.js';
@@ -139,7 +140,7 @@ function InvestmentsList({ selectedYear }: { selectedYear: YearFilterValue }) {
     });
   }
 
-  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isPending) return <SkeletonRows rows={3} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load investments.</p>;
   if (!investments || investments.length === 0) {
     return <p className="text-sm text-slate-500">No investments yet — add one above.</p>;
@@ -296,7 +297,7 @@ function ProjectionScenarios() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
         Retirement projection scenarios
       </h2>
@@ -371,7 +372,7 @@ function ProjectionScenarios() {
       </form>
       {error && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={2} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load projection scenarios.</p>}
       <ul className="space-y-2">
         {scenarios?.map((scenario) => (
@@ -385,7 +386,7 @@ function ProjectionScenarios() {
 
 function HoldingsSection({ selectedYear }: { selectedYear: YearFilterValue }) {
   const { data: rows, isPending, isError } = useHoldingsByMonth();
-  if (isPending) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (isPending) return <SkeletonChart className="h-56 w-full" />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load holdings history.</p>;
   if (!rows || rows.length === 0) {
     return <p className="text-sm text-slate-500">Add a valuation to an investment to see holdings over time.</p>;
@@ -423,19 +424,19 @@ export function InvestmentsPage() {
         <YearFilterControl selectedYear={selectedYear} onChange={setSelectedYear} earliestYear={earliestYear} />
       </div>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
           Holdings over time ({selectedYear === 'all' ? 'all time' : selectedYear})
         </h2>
         <HoldingsSection selectedYear={selectedYear} />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Add investment</h2>
         <AddInvestmentForm />
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Holdings</h2>
           <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>

@@ -8,6 +8,7 @@ import {
   useUpdateTransactionVendor,
 } from '../../hooks/useTransactions.js';
 import { transactionExportUrl } from '../../api/transactions.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY } from '../../theme/tokens.js';
 
@@ -42,7 +43,7 @@ export function DetailPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Detail</h1>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="card-surface flex flex-wrap items-end gap-3 p-4">
         <label className="text-sm text-slate-700 dark:text-slate-300">
           Account
           <select
@@ -147,8 +148,12 @@ export function DetailPage() {
         </a>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-        {isPending && <p className="p-4 text-sm text-slate-500">Loading…</p>}
+      <div className="card-surface overflow-hidden">
+        {isPending && (
+          <div className="p-4">
+            <SkeletonRows rows={6} />
+          </div>
+        )}
         {isError && <p className="p-4 text-sm text-red-600 dark:text-red-400">Failed to load transactions.</p>}
         {data && (
           <>

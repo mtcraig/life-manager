@@ -29,6 +29,7 @@ import {
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { PropertyMap } from '../../components/PropertyMap.js';
+import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
@@ -51,7 +52,7 @@ function SummaryTile({
           ? 'text-yellow-600 dark:text-yellow-400'
           : 'text-slate-900 dark:text-slate-100';
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="card-surface p-4">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-semibold ${color}`}>{formatMoney(value)}</div>
     </div>
@@ -123,7 +124,7 @@ function PropertiesSection() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Properties</h2>
         <button onClick={() => setShowImport((v) => !v)} className={BTN_ROW_ACTION}>
@@ -163,84 +164,91 @@ function PropertiesSection() {
         </button>
       </form>
 
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={2} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load properties.</p>}
       {rowError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
       {properties && properties.length === 0 && (
         <p className="text-sm text-slate-500">No properties yet — add one above.</p>
       )}
       {properties && properties.length > 0 && (
-        <div className="mb-4">
-          <PropertyMap properties={properties} />
+        <div className="flex flex-col gap-4 md:flex-row-reverse md:items-start">
+          <div className="md:w-1/2">
+            <PropertyMap properties={properties} />
+          </div>
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800 md:w-1/2">
+            {properties.map((property) => (
+              <li key={property.id} className="py-3">
+                {editingId === property.id ? (
+                  <form
+                    onSubmit={(e) => handleEditSubmit(e, property.id)}
+                    className="flex flex-wrap items-end gap-3"
+                  >
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Name
+                      <input
+                        required
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </label>
+                    <label className="text-sm text-slate-700 dark:text-slate-300">
+                      Address
+                      <input
+                        value={editAddress}
+                        onChange={(e) => setEditAddress(e.target.value)}
+                        className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </label>
+                    <button type="submit" disabled={updateProperty.isPending} className={BTN_PRIMARY}>
+                      {updateProperty.isPending ? 'Saving…' : 'Save'}
+                    </button>
+                    <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
+                      Cancel
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setExpandedId(expandedId === property.id ? null : property.id)}
+                      className="text-left"
+                    >
+                      <span className="font-medium text-slate-900 dark:text-slate-100">{property.name}</span>
+                      {property.address && (
+                        <span className="ml-2 text-xs text-slate-500">{property.address}</span>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
+                        {property.currentValue !== null ? formatMoney(property.currentValue) : '—'}
+                      </span>
+                      <button onClick={() => startEditing(property)} className={BTN_ROW_ACTION}>
+                        Edit
+                      </button>
+                      <button onClick={() => handleArchive(property.id)} className={BTN_ROW_ACTION}>
+                        Archive
+                      </button>
+                      <button onClick={() => handleDelete(property)} className={BTN_ROW_ACTION}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {expandedId === property.id && editingId !== property.id && (
+                  <ValuationHistoryPanel
+                    valuations={valuations}
+                    isPending={isValuationsPending}
+                    onAddValuation={(input) => addValuation.mutate(input)}
+                    isAdding={addValuation.isPending}
+                    onUpdateValuation={(valuationId, input) => updateValuation.mutate({ valuationId, input })}
+                    onDeleteValuation={(valuationId) => deleteValuation.mutate(valuationId)}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
-      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-        {properties?.map((property) => (
-          <li key={property.id} className="py-3">
-            {editingId === property.id ? (
-              <form onSubmit={(e) => handleEditSubmit(e, property.id)} className="flex flex-wrap items-end gap-3">
-                <label className="text-sm text-slate-700 dark:text-slate-300">
-                  Name
-                  <input
-                    required
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </label>
-                <label className="text-sm text-slate-700 dark:text-slate-300">
-                  Address
-                  <input
-                    value={editAddress}
-                    onChange={(e) => setEditAddress(e.target.value)}
-                    className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </label>
-                <button type="submit" disabled={updateProperty.isPending} className={BTN_PRIMARY}>
-                  {updateProperty.isPending ? 'Saving…' : 'Save'}
-                </button>
-                <button type="button" onClick={() => setEditingId(null)} className={BTN_ROW_ACTION}>
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setExpandedId(expandedId === property.id ? null : property.id)}
-                  className="text-left"
-                >
-                  <span className="font-medium text-slate-900 dark:text-slate-100">{property.name}</span>
-                  {property.address && <span className="ml-2 text-xs text-slate-500">{property.address}</span>}
-                </button>
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-slate-900 dark:text-slate-100">
-                    {property.currentValue !== null ? formatMoney(property.currentValue) : '—'}
-                  </span>
-                  <button onClick={() => startEditing(property)} className={BTN_ROW_ACTION}>
-                    Edit
-                  </button>
-                  <button onClick={() => handleArchive(property.id)} className={BTN_ROW_ACTION}>
-                    Archive
-                  </button>
-                  <button onClick={() => handleDelete(property)} className={BTN_ROW_ACTION}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            )}
-            {expandedId === property.id && editingId !== property.id && (
-              <ValuationHistoryPanel
-                valuations={valuations}
-                isPending={isValuationsPending}
-                onAddValuation={(input) => addValuation.mutate(input)}
-                isAdding={addValuation.isPending}
-                onUpdateValuation={(valuationId, input) => updateValuation.mutate({ valuationId, input })}
-                onDeleteValuation={(valuationId) => deleteValuation.mutate(valuationId)}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }
@@ -319,7 +327,7 @@ function LiabilitiesSection() {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="card-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Liabilities</h2>
         <div className="flex items-center gap-3">
@@ -370,7 +378,7 @@ function LiabilitiesSection() {
         </button>
       </form>
 
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonRows rows={2} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load liabilities.</p>}
       {rowError && <p className="mb-2 text-sm text-red-600 dark:text-red-400">{rowError}</p>}
       {liabilities && liabilities.length === 0 && (
@@ -464,7 +472,7 @@ export function WealthPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Wealth</h1>
 
-      {isPending && <p className="text-sm text-slate-500">Loading…</p>}
+      {isPending && <SkeletonStatGrid count={4} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the wealth summary.</p>}
       {summary && (
         <div className="space-y-3">
