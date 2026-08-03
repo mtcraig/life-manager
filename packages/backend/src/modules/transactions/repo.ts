@@ -331,6 +331,73 @@ export function listTopTransactionsByAmount(params: {
     .all();
 }
 
+export interface CategorisedAmountWithTransferFlagRow {
+  categoryId: number | null;
+  amount: number;
+  isTransfer: boolean;
+}
+
+/**
+ * Flat (categoryId, amount, isTransfer) rows for a date range — the input to
+ * Budgets' actual-spend-by-category calculation, which needs the transfer
+ * flag to exclude transfers the same way getMoneyFlow does.
+ */
+export function listCategorisedTransactionAmountsWithTransferFlag(params: {
+  dateFrom: string;
+  dateTo: string;
+}): CategorisedAmountWithTransferFlagRow[] {
+  const rows = db
+    .select({
+      categoryId: transactions.categoryId,
+      amount: transactions.amount,
+      isTransfer: categories.isTransfer,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(gte(transactions.date, params.dateFrom), lte(transactions.date, params.dateTo)))
+    .all();
+
+  return rows.map((row) => ({ ...row, isTransfer: row.isTransfer ?? false }));
+}
+
+export interface RecurringAnalysisRow {
+  date: string;
+  amount: number;
+  normalizedDescription: string;
+  categoryId: number | null;
+  isTransfer: boolean;
+}
+
+/**
+ * Flat (date, amount, normalizedDescription, categoryId, isTransfer) rows
+ * for a date range — the input to Forecast's recurring-item detection and
+ * variable-spend averaging, both of which need the raw description (to
+ * group repeating payees) and the transfer flag (to exclude transfers).
+ */
+export function listTransactionsForRecurringAnalysis(params: {
+  accountId?: number;
+  dateFrom: string;
+  dateTo: string;
+}): RecurringAnalysisRow[] {
+  const conditions = [gte(transactions.date, params.dateFrom), lte(transactions.date, params.dateTo)];
+  if (params.accountId !== undefined) conditions.push(eq(transactions.accountId, params.accountId));
+
+  const rows = db
+    .select({
+      date: transactions.date,
+      amount: transactions.amount,
+      normalizedDescription: transactions.normalizedDescription,
+      categoryId: transactions.categoryId,
+      isTransfer: categories.isTransfer,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(...conditions))
+    .all();
+
+  return rows.map((row) => ({ ...row, isTransfer: row.isTransfer ?? false }));
+}
+
 /** Earliest transaction date on record, so year filters can offer only years with real data. */
 export function getEarliestTransactionDate(accountId?: number): string | null {
   const where = accountId !== undefined ? eq(transactions.accountId, accountId) : undefined;
