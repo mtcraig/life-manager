@@ -23,7 +23,10 @@ export interface ParsedTransactionRow {
  * sign convention keep working. When it's `'credit_card'`, the computed
  * amount is negated: card statements report spending as positive and
  * payments as negative, the opposite of every other account type's "money
- * out = negative" convention used throughout the rest of the app.
+ * out = negative" convention used throughout the rest of the app. The bank's
+ * reported balance (`balanceAfter`) needs the same negation for the same
+ * reason: banks report a credit card's balance as the (positive) amount
+ * owed, whereas the rest of this app treats a negative balance as money owed.
  */
 export function parseAccountCsv(
   csvContent: string,
@@ -46,13 +49,17 @@ export function parseAccountCsv(
         parseMoneyOrZero(requireColumn(row, mapping.debit as string, 'debit'));
     const amount = accountType === 'credit_card' ? -rawAmount : rawAmount;
 
+    const rawBalanceAfter = mapping.balance ? parseOptionalBalance(row, mapping.balance) : null;
+    const balanceAfter =
+      accountType === 'credit_card' && rawBalanceAfter !== null ? -rawBalanceAfter : rawBalanceAfter;
+
     return {
       date: parseDateToIso(rawDate, mapping.dateFormat),
       amount,
       description,
       normalizedDescription: normalizeDescription(description),
       externalId: mapping.externalId ? (row[mapping.externalId] ?? null) : null,
-      balanceAfter: mapping.balance ? parseOptionalBalance(row, mapping.balance) : null,
+      balanceAfter,
       rawCsvRow: row,
     };
   });

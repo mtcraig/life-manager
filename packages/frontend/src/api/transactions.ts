@@ -4,6 +4,7 @@ import type {
   TransactionListQuery,
   TransactionListResultDto,
   UpdateTransactionCategoryInput,
+  UpdateTransactionVendorInput,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
 
@@ -27,6 +28,13 @@ export function transactionExportUrl(query: Partial<TransactionExportQuery>): st
 
 export function updateTransactionCategory(id: number, input: UpdateTransactionCategoryInput) {
   return apiFetch<TransactionDto>(`/transactions/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateTransactionVendor(id: number, input: UpdateTransactionVendorInput) {
+  return apiFetch<TransactionDto>(`/transactions/${id}/vendor`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

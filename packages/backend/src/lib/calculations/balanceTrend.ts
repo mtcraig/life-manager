@@ -21,22 +21,33 @@ export interface BalanceTrendPoint {
  * rows self-heals at every snap instead of compounding forever.
  *
  * `rows` must already be in a stable chronological order (see
- * listTransactionAmountsWithTransferFlag's ORDER BY) — when multiple rows
- * share a date, the *last* row in input order that carries a balanceAfter
- * wins for that date's snap.
+ * listTransactionAmountsWithTransferFlag's ORDER BY). When multiple rows
+ * share a date and more than one carries a balanceAfter, picking "whichever
+ * comes last in input order" isn't safe — some banks export a day's
+ * transactions newest-first, so the last row in (date, id) order can
+ * actually be the *first* transaction of that day, and its balance is a
+ * stale, too-high mid-day figure rather than the true end-of-day one. Once
+ * there's already a confirmed running balance to compare against, the
+ * correct end-of-day snap is order-independent: it's whichever candidate is
+ * closest to `runningBalance-before-this-day + this-day's-net-amount`, since
+ * that sum equals the true end-of-day balance regardless of intra-day order.
+ * Before any confirmation exists there's no trustworthy anchor to compare
+ * against, so the last-in-input-order candidate is used as the best
+ * available fallback (matching the account's very first tracked days, where
+ * the running total is only ever a relative approximation anyway).
  */
 export function computeBalanceTrend(rows: DatedAmount[]): BalanceTrendPoint[] {
   interface DayAgg {
     amount: number;
-    lastKnownBalance: number | null;
+    balanceCandidates: number[]; // in input order
   }
   const byDate = new Map<string, DayAgg>();
 
   for (const row of rows) {
-    const day = byDate.get(row.date) ?? { amount: 0, lastKnownBalance: null };
+    const day = byDate.get(row.date) ?? { amount: 0, balanceCandidates: [] };
     day.amount += row.amount;
     if (row.balanceAfter !== undefined && row.balanceAfter !== null) {
-      day.lastKnownBalance = row.balanceAfter;
+      day.balanceCandidates.push(row.balanceAfter);
     }
     byDate.set(row.date, day);
   }
@@ -46,10 +57,18 @@ export function computeBalanceTrend(rows: DatedAmount[]): BalanceTrendPoint[] {
   return [...byDate.keys()].sort().map((date) => {
     const day = byDate.get(date) as DayAgg;
     runningBalance += day.amount;
-    if (day.lastKnownBalance !== null) {
-      runningBalance = day.lastKnownBalance;
+    if (day.balanceCandidates.length > 0) {
+      runningBalance = confirmed
+        ? closestCandidate(day.balanceCandidates, runningBalance)
+        : day.balanceCandidates[day.balanceCandidates.length - 1]!;
       confirmed = true;
     }
     return { date, balance: runningBalance, confirmed };
   });
+}
+
+function closestCandidate(candidates: number[], target: number): number {
+  return candidates.reduce((closest, candidate) =>
+    Math.abs(candidate - target) < Math.abs(closest - target) ? candidate : closest,
+  );
 }

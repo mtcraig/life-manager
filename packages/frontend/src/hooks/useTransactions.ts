@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { TransactionListQuery, UpdateTransactionCategoryInput } from '@life-manager/shared';
-import { fetchTransactions, updateTransactionCategory } from '../api/transactions.js';
+import type {
+  TransactionListQuery,
+  UpdateTransactionCategoryInput,
+  UpdateTransactionVendorInput,
+} from '@life-manager/shared';
+import { fetchTransactions, updateTransactionCategory, updateTransactionVendor } from '../api/transactions.js';
 
 export function useTransactions(query: Partial<TransactionListQuery>) {
   return useQuery({
@@ -14,6 +18,15 @@ export function useUpdateTransactionCategory() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: UpdateTransactionCategoryInput }) =>
       updateTransactionCategory(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+  });
+}
+
+export function useUpdateTransactionVendor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: UpdateTransactionVendorInput }) =>
+      updateTransactionVendor(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 }

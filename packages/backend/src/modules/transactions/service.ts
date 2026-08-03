@@ -4,6 +4,7 @@ import type {
   TransactionListQuery,
   TransactionListResultDto,
   UpdateTransactionCategoryInput,
+  UpdateTransactionVendorInput,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
 import { toCsvRow } from '../../lib/csv';
@@ -65,6 +66,14 @@ export function updateTransactionCategory(
     input.categoryId === null ? null : 'manual',
     input.categoryId === null ? null : null,
   );
+  if (!row) {
+    throw new HttpError(404, `Transaction ${id} not found`);
+  }
+  return toDto(row);
+}
+
+export function updateTransactionVendor(id: number, input: UpdateTransactionVendorInput): TransactionDto {
+  const row = repo.setTransactionVendor(id, input.vendorId, input.vendorId === null ? null : 'manual');
   if (!row) {
     throw new HttpError(404, `Transaction ${id} not found`);
   }

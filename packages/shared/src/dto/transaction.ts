@@ -44,3 +44,8 @@ export const updateTransactionCategorySchema = z.object({
   categoryId: z.number().int().positive().nullable(),
 });
 export type UpdateTransactionCategoryInput = z.infer<typeof updateTransactionCategorySchema>;
+
+export const updateTransactionVendorSchema = z.object({
+  vendorId: z.number().int().positive().nullable(),
+});
+export type UpdateTransactionVendorInput = z.infer<typeof updateTransactionVendorSchema>;

@@ -113,4 +113,22 @@ describe('parseAccountCsv — credit_card sign convention', () => {
     const rows = parseAccountCsv(csv, mapping);
     expect(rows[0]?.amount).toBe(1999);
   });
+
+  it('negates a mapped balance column for a credit_card account (bank-reported amount owed -> negative)', () => {
+    const csv = 'Date,Description,Amount,Balance\n2026-01-01,Shop,19.99,445.82\n';
+    const rows = parseAccountCsv(csv, { ...mapping, balance: 'Balance' }, 'credit_card');
+    expect(rows[0]?.balanceAfter).toBe(-44582);
+  });
+
+  it('does not negate a mapped balance column for a non-credit_card account', () => {
+    const csv = 'Date,Description,Amount,Balance\n2026-01-01,Shop,19.99,445.82\n';
+    const rows = parseAccountCsv(csv, { ...mapping, balance: 'Balance' }, 'current');
+    expect(rows[0]?.balanceAfter).toBe(44582);
+  });
+
+  it('leaves a null balance null for a credit_card account', () => {
+    const csv = 'Date,Description,Amount,Balance\n2026-01-01,Shop,19.99,\n';
+    const rows = parseAccountCsv(csv, { ...mapping, balance: 'Balance' }, 'credit_card');
+    expect(rows[0]?.balanceAfter).toBeNull();
+  });
 });

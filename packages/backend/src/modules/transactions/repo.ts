@@ -169,6 +169,19 @@ export function setTransactionCategory(
     .get();
 }
 
+export function setTransactionVendor(
+  id: number,
+  vendorId: number | null,
+  vendorSource: string | null,
+): TransactionRow | undefined {
+  return db
+    .update(transactions)
+    .set({ vendorId, vendorSource, matchedRuleId: null })
+    .where(eq(transactions.id, id))
+    .returning()
+    .get();
+}
+
 /** Clears the "which rule matched this" bookkeeping field when that rule is deleted, leaving the transaction's own categoryId/vendorId untouched. */
 export function clearMatchedRuleId(ruleId: number): void {
   db.update(transactions).set({ matchedRuleId: null }).where(eq(transactions.matchedRuleId, ruleId)).run();
@@ -327,22 +340,4 @@ export function getEarliestTransactionDate(accountId?: number): string | null {
     .where(where)
     .get() as { earliest: string | null };
   return earliest;
-}
-
-/**
- * Total transaction amount per account (including transfers, since transfers
- * are real money movements) — used by the Wealth aggregation to derive each
- * account's contribution to liquid assets.
- */
-export function sumAmountsByAccount(): Map<number, number> {
-  const rows = db
-    .select({ accountId: transactions.accountId, total: sql<number>`sum(${transactions.amount})` })
-    .from(transactions)
-    .groupBy(transactions.accountId)
-    .all();
-  const totals = new Map<number, number>();
-  for (const row of rows) {
-    totals.set(row.accountId, row.total);
-  }
-  return totals;
 }

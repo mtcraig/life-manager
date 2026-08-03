@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate-cli.ts",
     "db:seed": "tsx src/db/seed-cli.ts",
-    "db:backfill-credit-card-sign": "tsx src/db/backfill-credit-card-sign-cli.ts"
+    "db:backfill-credit-card-sign": "tsx src/db/backfill-credit-card-sign-cli.ts",
+    "db:backfill-credit-card-balance-sign": "tsx src/db/backfill-credit-card-balance-sign-cli.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
