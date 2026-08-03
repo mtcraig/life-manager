@@ -75,9 +75,15 @@ cache. The database file lives at `packages/backend/data/life-manager.db` by def
 (controlled by `DB_PATH`), and it is the only copy of your data. It is gitignored on
 purpose, because it contains your personal financial data and must never be committed.
 
-**Back this file up yourself**, the same way you'd back up any other important personal
-file — e.g. include `packages/backend/data/` in whatever backup tool or sync folder you
-already use. There is no automatic backup built into the app.
+**Back this up regularly.** Use the **Download backup** button in Settings → Database to
+download a copy of the live database file at any time. To restore one — e.g. after moving
+to a new machine, or reinstalling — use the **Import backup** button on the same screen
+and select a previously downloaded `.db` file. This completely replaces all current data
+with the backup's data and cannot be undone, so it asks you to type a confirmation phrase
+first. You can also back the file up manually the same way you'd back up any other
+important file — e.g. include `packages/backend/data/` in whatever backup tool or sync
+folder you already use — but there is no automatic backup built into the app beyond what
+you trigger yourself via the Download/Import buttons.
 
 To reset to a clean, empty-but-seeded database (for testing or starting over):
 
@@ -89,7 +95,8 @@ npm run db:seed --workspace=@life-manager/backend
 
 This is destructive — it deletes all accounts, transactions, investments, and every
 other record you've entered. Only run it if you mean to discard the current data (after
-backing it up, if you want to keep it).
+backing it up, if you want to keep it). The in-app **Reset to default state** button in
+Settings → Database does the same thing without leaving the app.
 
 ## Ingesting transactions
 
