@@ -11,6 +11,7 @@ import {
   InsuranceIcon,
   InvestmentsIcon,
   SettingsIcon,
+  SubscriptionsIcon,
   WealthIcon,
 } from './NavIcons.js';
 
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/accounts', label: 'Accounts', icon: AccountsIcon },
   { to: '/detail', label: 'Detail', icon: DetailIcon },
   { to: '/wealth', label: 'Wealth', icon: WealthIcon },
+  { to: '/subscriptions', label: 'Subscriptions', icon: SubscriptionsIcon },
   { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
   { to: '/insurance', label: 'Insurance', icon: InsuranceIcon },
   { to: '/energy', label: 'Energy', icon: EnergyIcon },

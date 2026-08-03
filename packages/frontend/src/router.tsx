@@ -4,6 +4,7 @@ import { HomePage } from './pages/Home/HomePage.js';
 import { AccountsPage } from './pages/Accounts/AccountsPage.js';
 import { DetailPage } from './pages/Detail/DetailPage.js';
 import { WealthPage } from './pages/Wealth/WealthPage.js';
+import { SubscriptionsPage } from './pages/Subscriptions/SubscriptionsPage.js';
 import { InvestmentsPage } from './pages/Investments/InvestmentsPage.js';
 import { InsurancePage } from './pages/Insurance/InsurancePage.js';
 import { EnergyPage } from './pages/Energy/EnergyPage.js';
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
       { path: 'accounts', element: <AccountsPage /> },
       { path: 'detail', element: <DetailPage /> },
       { path: 'wealth', element: <WealthPage /> },
+      { path: 'subscriptions', element: <SubscriptionsPage /> },
       { path: 'investments', element: <InvestmentsPage /> },
       { path: 'insurance', element: <InsurancePage /> },
       { path: 'energy', element: <EnergyPage /> },

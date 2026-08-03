@@ -13,6 +13,7 @@ export * from './liability.js';
 export * from './projection-scenario.js';
 export * from './wealth.js';
 export * from './insurance-plan.js';
+export * from './subscription.js';
 export * from './area.js';
 export * from './contents-item.js';
 export * from './energy-reading.js';
