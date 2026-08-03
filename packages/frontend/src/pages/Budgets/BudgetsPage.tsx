@@ -12,7 +12,7 @@ import { BudgetCompositionChart } from '../../components/charts/BudgetCompositio
 import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { Tabs } from '../../components/Tabs.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 type BudgetsTab = 'overview' | 'manage';
 type PeriodMode = 'monthly' | 'annual';
@@ -296,7 +296,7 @@ function BudgetsList() {
               {budget.endDate ? ` until ${budget.endDate}` : ' (ongoing)'}
             </div>
           </div>
-          <button onClick={() => deleteBudget.mutate(budget.id)} className={BTN_ROW_ACTION}>
+          <button onClick={() => deleteBudget.mutate(budget.id)} className={BTN_ROW_ACTION_DANGER}>
             Delete
           </button>
         </li>

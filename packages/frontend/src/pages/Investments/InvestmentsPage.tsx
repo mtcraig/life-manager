@@ -33,7 +33,7 @@ import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import type { YearFilterValue } from '../../lib/yearFilter.js';
 import { dateRangeForYear } from '../../lib/yearFilter.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 function AddInvestmentForm() {
   const createInvestment = useCreateInvestment();
@@ -203,7 +203,7 @@ function InvestmentsList({ selectedYear }: { selectedYear: YearFilterValue }) {
                   <button onClick={() => handleArchive(investment.id)} className={BTN_ROW_ACTION}>
                     Archive
                   </button>
-                  <button onClick={() => handleDelete(investment)} className={BTN_ROW_ACTION}>
+                  <button onClick={() => handleDelete(investment)} className={BTN_ROW_ACTION_DANGER}>
                     Delete
                   </button>
                 </div>
@@ -234,7 +234,7 @@ function ProjectionScenarioRow({ scenario }: { scenario: ProjectionScenarioDto }
     <li className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
       <div className="flex items-center justify-between">
         <span className="font-medium text-slate-900 dark:text-slate-100">{scenario.name}</span>
-        <button onClick={() => deleteScenario.mutate(scenario.id)} className={BTN_ROW_ACTION}>
+        <button onClick={() => deleteScenario.mutate(scenario.id)} className={BTN_ROW_ACTION_DANGER}>
           Delete
         </button>
       </div>

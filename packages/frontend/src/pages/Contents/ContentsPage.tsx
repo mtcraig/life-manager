@@ -10,7 +10,7 @@ import {
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 function AreaManager() {
   const { data: areas, isPending, isError } = useAreas();
@@ -248,7 +248,7 @@ function ContentsItemsList() {
               <span className="font-medium text-slate-900 dark:text-slate-100">{formatMoney(item.value)}</span>
               <button
                 onClick={() => deleteItem.mutate(item.id)}
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className={BTN_ROW_ACTION_DANGER}
               >
                 Delete
               </button>

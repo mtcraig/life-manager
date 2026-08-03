@@ -10,7 +10,7 @@ import {
 import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 type InsuranceStatus = 'cancelled' | 'upcoming' | 'active' | 'expired';
 
@@ -256,7 +256,7 @@ function InsurancePlansList() {
                   Cancel
                 </button>
               )}
-              <button onClick={() => deletePlan.mutate(plan.id)} className={BTN_ROW_ACTION}>
+              <button onClick={() => deletePlan.mutate(plan.id)} className={BTN_ROW_ACTION_DANGER}>
                 Delete
               </button>
             </div>

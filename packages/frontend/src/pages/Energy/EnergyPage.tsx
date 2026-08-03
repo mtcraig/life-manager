@@ -10,7 +10,7 @@ import {
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
-import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
+import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
 const DEFAULT_UNIT_BY_METER: Record<MeterType, EnergyUnit> = {
   electricity: 'kWh',
@@ -199,7 +199,7 @@ function ReadingsList() {
           </div>
           <button
             onClick={() => deleteReading.mutate(reading.id)}
-            className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            className={BTN_ROW_ACTION_DANGER}
           >
             Delete
           </button>
