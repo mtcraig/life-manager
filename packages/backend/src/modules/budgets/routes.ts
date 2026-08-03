@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { budgetProgressQuerySchema, createBudgetSchema, updateBudgetSchema } from '@life-manager/shared';
+import {
+  annualBudgetProgressQuerySchema,
+  budgetProgressQuerySchema,
+  createBudgetSchema,
+  updateBudgetSchema,
+} from '@life-manager/shared';
 import { z } from 'zod';
 import * as service from './service';
 
@@ -13,6 +18,11 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.get('/budgets/progress', async (request) => {
     const { date } = budgetProgressQuerySchema.parse(request.query);
     return service.getBudgetProgress(date);
+  });
+
+  app.get('/budgets/progress/annual', async (request) => {
+    const { year } = annualBudgetProgressQuerySchema.parse(request.query);
+    return service.getAnnualBudgetProgress(year);
   });
 
   app.get('/budgets/:id', async (request) => {

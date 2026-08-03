@@ -79,3 +79,52 @@ export function getBudgetProgress(dateIso?: string): BudgetProgressDto {
   const { items, totalBudgeted, totalActual } = computeBudgetProgress(activeBudgets, actualsByCategory, categoryNames);
   return { periodStart, periodEnd, items, totalBudgeted, totalActual };
 }
+
+/**
+ * Cumulative budgeted-vs-actual for a year to date, one category-name row per
+ * category. Reuses `getBudgetProgress` once per elapsed month rather than a
+ * separate calculation, since it already correctly resolves which budget was
+ * active for each individual month (a budget's amount can change partway
+ * through the year) and that month's own actual spend — this just sums the
+ * per-month results. Defaults to the current year, stopping at the current
+ * month; a past year sums all 12 months.
+ */
+export function getAnnualBudgetProgress(year?: number): BudgetProgressDto {
+  const today = new Date();
+  const targetYear = year ?? today.getFullYear();
+  const lastMonth = targetYear === today.getFullYear() ? today.getMonth() + 1 : 12;
+
+  const itemsByCategory = new Map<number, { categoryName: string; budgeted: number; actual: number }>();
+  let periodEnd = `${targetYear}-01-31`;
+
+  for (let month = 1; month <= lastMonth; month++) {
+    const monthDate = `${targetYear}-${String(month).padStart(2, '0')}-01`;
+    const monthProgress = getBudgetProgress(monthDate);
+    periodEnd = monthProgress.periodEnd;
+    for (const item of monthProgress.items) {
+      const existing = itemsByCategory.get(item.categoryId) ?? {
+        categoryName: item.categoryName,
+        budgeted: 0,
+        actual: 0,
+      };
+      existing.budgeted += item.budgeted;
+      existing.actual += item.actual;
+      itemsByCategory.set(item.categoryId, existing);
+    }
+  }
+
+  const items = [...itemsByCategory.entries()]
+    .map(([categoryId, { categoryName, budgeted, actual }]) => ({
+      categoryId,
+      categoryName,
+      budgeted,
+      actual,
+      delta: budgeted - actual,
+    }))
+    .sort((a, b) => a.categoryName.localeCompare(b.categoryName));
+
+  const totalBudgeted = items.reduce((sum, item) => sum + item.budgeted, 0);
+  const totalActual = items.reduce((sum, item) => sum + item.actual, 0);
+
+  return { periodStart: `${targetYear}-01-01`, periodEnd, items, totalBudgeted, totalActual };
+}

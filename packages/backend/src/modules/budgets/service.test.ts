@@ -40,7 +40,8 @@ vi.mock('../transactions/repo', () => ({
   ]),
 }));
 
-const { createBudget, deleteBudget, getBudget, getBudgetProgress } = await import('./service');
+const { createBudget, deleteBudget, getAnnualBudgetProgress, getBudget, getBudgetProgress } =
+  await import('./service');
 
 function makeBudget(overrides: Partial<BudgetRow> & { id: number }): BudgetRow {
   return {
@@ -105,5 +106,42 @@ describe('getBudgetProgress', () => {
     const progress = getBudgetProgress('2026-08-15');
 
     expect(progress.items).toEqual([]);
+  });
+});
+
+describe('getAnnualBudgetProgress', () => {
+  it('sums a flat budget across all 12 months of a past year', () => {
+    budgetsById.set(1, makeBudget({ id: 1, startDate: '2025-01-01', endDate: null }));
+
+    const progress = getAnnualBudgetProgress(2025);
+
+    expect(progress.periodStart).toBe('2025-01-01');
+    expect(progress.periodEnd).toBe('2025-12-31');
+    expect(progress.totalBudgeted).toBe(40000 * 12);
+    expect(progress.totalActual).toBe(32000 * 12);
+    expect(progress.items).toEqual([
+      { categoryId: 1, categoryName: 'Groceries', budgeted: 40000 * 12, actual: 32000 * 12, delta: 40000 * 12 - 32000 * 12 },
+    ]);
+  });
+
+  it('sums correctly across months when the budget amount changes partway through the year', () => {
+    budgetsById.set(1, makeBudget({ id: 1, startDate: '2025-01-01', endDate: '2025-06-30', amount: 30000 }));
+    budgetsById.set(2, makeBudget({ id: 2, startDate: '2025-07-01', endDate: null, amount: 40000 }));
+
+    const progress = getAnnualBudgetProgress(2025);
+
+    // 6 months at 30000 + 6 months at 40000
+    expect(progress.totalBudgeted).toBe(30000 * 6 + 40000 * 6);
+  });
+
+  it('defaults to the current year and stops at the current month, not the whole year', () => {
+    budgetsById.set(1, makeBudget({ id: 1, startDate: '2020-01-01', endDate: null }));
+
+    const progress = getAnnualBudgetProgress();
+
+    const now = new Date();
+    const elapsedMonths = now.getMonth() + 1;
+    expect(progress.periodStart).toBe(`${now.getFullYear()}-01-01`);
+    expect(progress.totalBudgeted).toBe(40000 * elapsedMonths);
   });
 });

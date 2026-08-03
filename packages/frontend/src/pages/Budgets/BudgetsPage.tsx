@@ -2,11 +2,13 @@ import { useState } from 'react';
 import type { BudgetProgressItemDto } from '@life-manager/shared';
 import { useCategories } from '../../hooks/useCategories.js';
 import {
+  useAnnualBudgetProgress,
   useBudgetProgress,
   useBudgets,
   useCreateBudget,
   useDeleteBudget,
 } from '../../hooks/useBudgets.js';
+import { BudgetCompositionChart } from '../../components/charts/BudgetCompositionChart.js';
 import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { Tabs } from '../../components/Tabs.js';
 import { formatMoney } from '../../lib/formatMoney.js';
@@ -39,7 +41,7 @@ function BudgetProgressRow({ item }: { item: BudgetProgressItemDto }) {
   const deltaLabel = over ? `${formatMoney(-item.delta)} over` : `${formatMoney(item.delta)} left`;
 
   return (
-    <li className="py-3">
+    <div className="card-surface p-3">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-slate-900 dark:text-slate-100">{item.categoryName}</span>
         <span className={`text-xs font-medium ${deltaClass}`}>{deltaLabel}</span>
@@ -50,7 +52,45 @@ function BudgetProgressRow({ item }: { item: BudgetProgressItemDto }) {
       <div className="mt-1 text-xs text-slate-500">
         {formatMoney(item.actual)} of {formatMoney(item.budgeted)}
       </div>
-    </li>
+    </div>
+  );
+}
+
+function YearToDateRow({ year }: { year: number }) {
+  const { data: annual, isPending, isError } = useAnnualBudgetProgress(year);
+  const remaining = annual ? annual.totalBudgeted - annual.totalActual : 0;
+
+  if (isPending) return <SkeletonStatGrid count={3} />;
+  if (isError) {
+    return <p className="text-sm text-red-600 dark:text-red-400">Failed to load year-to-date budget progress.</p>;
+  }
+  if (!annual) return null;
+
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <div className="card-surface p-4">
+        <div className="text-xs uppercase tracking-wide text-slate-500">Budgeted ({year} to date)</div>
+        <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          {formatMoney(annual.totalBudgeted)}
+        </div>
+      </div>
+      <div className="card-surface p-4">
+        <div className="text-xs uppercase tracking-wide text-slate-500">Actual ({year} to date)</div>
+        <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+          {formatMoney(annual.totalActual)}
+        </div>
+      </div>
+      <div className="card-surface p-4">
+        <div className="text-xs uppercase tracking-wide text-slate-500">Cumulative delta</div>
+        <div
+          className={`mt-1 text-2xl font-semibold ${
+            remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          }`}
+        >
+          {formatMoney(remaining)}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -102,15 +142,25 @@ function BudgetOverviewTab() {
           </div>
 
           <div className="card-surface p-4">
+            <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Spend composition</h2>
+            <BudgetCompositionChart items={progress.items} />
+          </div>
+
+          <div>
             {progress.items.length === 0 ? (
               <p className="text-sm text-slate-500">No budgets active for this period — set one in the Manage tab.</p>
             ) : (
-              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {progress.items.map((item) => (
                   <BudgetProgressRow key={item.categoryId} item={item} />
                 ))}
-              </ul>
+              </div>
             )}
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Year to date</h2>
+            <YearToDateRow year={viewDate.getFullYear()} />
           </div>
         </>
       )}
