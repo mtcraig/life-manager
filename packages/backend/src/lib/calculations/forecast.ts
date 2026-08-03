@@ -1,10 +1,11 @@
-import type { RecurringCadence } from './recurringItems';
+import type { RecurringCadence, RecurringConfidence } from './recurringItems';
 
 export interface ForecastRecurringItem {
   normalizedDescription: string;
   categoryId: number | null;
   averageAmount: number; // integer pence, signed
   cadence: RecurringCadence;
+  confidence: RecurringConfidence;
   lastDate: string;
 }
 
@@ -13,6 +14,7 @@ export interface ForecastEvent {
   description: string;
   amount: number;
   categoryId: number | null;
+  confidence: RecurringConfidence;
   runningBalance: number;
 }
 
@@ -81,11 +83,19 @@ export function computeForecast(params: {
   } = params;
   const toDateExclusive = addDays(fromDate, horizonDays);
 
-  const eventsByDate = new Map<string, { description: string; amount: number; categoryId: number | null }[]>();
+  const eventsByDate = new Map<
+    string,
+    { description: string; amount: number; categoryId: number | null; confidence: RecurringConfidence }[]
+  >();
   for (const item of recurringItems) {
     for (const date of projectOccurrences(item, fromDate, toDateExclusive)) {
       const list = eventsByDate.get(date) ?? [];
-      list.push({ description: item.normalizedDescription, amount: item.averageAmount, categoryId: item.categoryId });
+      list.push({
+        description: item.normalizedDescription,
+        amount: item.averageAmount,
+        categoryId: item.categoryId,
+        confidence: item.confidence,
+      });
       eventsByDate.set(date, list);
     }
   }

@@ -7,7 +7,11 @@ import * as transactionsRepo from '../transactions/repo';
 
 const DEFAULT_HORIZON_DAYS = 45;
 const HISTORY_MONTHS = 12;
-const VARIABLE_AVERAGE_MONTHS = 3;
+// Widened from 3: a short averaging window lets a single lumpy one-off
+// purchase (a holiday, an insurance renewal) dominate the "typical monthly"
+// figure and get extrapolated across the whole forecast horizon as if it
+// recurred every month.
+const VARIABLE_AVERAGE_MONTHS = 6;
 
 function monthsAgo(dateIso: string, months: number): string {
   const d = new Date(dateIso);
@@ -39,10 +43,15 @@ export function getForecast(accountId?: number, horizonDays: number = DEFAULT_HO
 
   const recurringItems = detectRecurringItems(historyRows, today);
 
+  // Transfers are included here too (see recurringItems.ts) — a transfer-
+  // categorised outflow (e.g. a credit card's own monthly payoff, modelled as
+  // a transfer from the current account) still reduces this account's real
+  // balance and must count toward its variable-spend baseline like any other
+  // outflow that didn't get picked up as a discrete recurring item.
   const variableCategoryMonthlyAverages = new Map<number, number>();
   const recentTotalsByCategory = new Map<number, number>();
   for (const row of historyRows) {
-    if (row.isTransfer || row.categoryId === null || row.amount >= 0 || row.date < averagesStart) continue;
+    if (row.categoryId === null || row.amount >= 0 || row.date < averagesStart) continue;
     recentTotalsByCategory.set(row.categoryId, (recentTotalsByCategory.get(row.categoryId) ?? 0) + -row.amount);
   }
   for (const [categoryId, total] of recentTotalsByCategory) {
@@ -59,6 +68,7 @@ export function getForecast(accountId?: number, horizonDays: number = DEFAULT_HO
       categoryId: item.categoryId,
       averageAmount: item.averageAmount,
       cadence: item.cadence,
+      confidence: item.confidence,
       lastDate: item.lastDate,
     })),
     variableCategoryMonthlyAverages,
@@ -77,6 +87,7 @@ export function getForecast(accountId?: number, horizonDays: number = DEFAULT_HO
       categoryId: item.categoryId,
       averageAmount: item.averageAmount,
       cadence: item.cadence,
+      confidence: item.confidence,
       nextDate: item.nextExpectedDate,
       sampleCount: item.sampleCount,
     })),

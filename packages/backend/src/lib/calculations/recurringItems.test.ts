@@ -31,6 +31,7 @@ describe('detectRecurringItems', () => {
         categoryId: 5,
         averageAmount: 320000,
         cadence: 'monthly',
+        confidence: 'high',
         lastDate: '2026-08-01',
         nextExpectedDate: '2026-08-31',
         sampleCount: 4,
@@ -88,16 +89,17 @@ describe('detectRecurringItems', () => {
     expect(items).toEqual([]);
   });
 
-  it('does not detect a one-off transaction that shares a description but a very different amount', () => {
+  it('still detects a solid-cadence series with a one-off amount outlier, but flags it as variable confidence', () => {
     const items = detectRecurringItems(
       [
-        row('2026-05-01', -1599, 'NETFLIX', 9),
         row('2026-06-01', -1599, 'NETFLIX', 9),
-        row('2026-07-01', -9999, 'NETFLIX', 9), // one-off, much larger
+        row('2026-07-01', -1599, 'NETFLIX', 9),
+        row('2026-08-01', -9999, 'NETFLIX', 9), // one-off, much larger
       ],
       ASOF,
     );
-    expect(items).toEqual([]);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.confidence).toBe('variable');
   });
 
   it('does not project a subscription cancelled 4 months ago', () => {
@@ -113,7 +115,7 @@ describe('detectRecurringItems', () => {
     expect(items).toEqual([]);
   });
 
-  it('excludes transfers', () => {
+  it('detects a recurring transfer series — transfers are still real balance movements for cash-flow purposes', () => {
     const items = detectRecurringItems(
       [
         row('2026-06-01', 50000, 'SAVINGS TRANSFER', 1, true),
@@ -122,10 +124,11 @@ describe('detectRecurringItems', () => {
       ],
       ASOF,
     );
-    expect(items).toEqual([]);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.confidence).toBe('high');
   });
 
-  it('tolerates small amount variation within 5%', () => {
+  it('tolerates small amount variation within 5%, with high confidence', () => {
     const items = detectRecurringItems(
       [
         row('2026-06-01', -9500, 'ENERGY DIRECT DEBIT', 3),
@@ -135,9 +138,10 @@ describe('detectRecurringItems', () => {
       ASOF,
     );
     expect(items).toHaveLength(1);
+    expect(items[0]!.confidence).toBe('high');
   });
 
-  it('rejects amount variation beyond 5%', () => {
+  it('still detects amount variation beyond 5%, but as variable confidence rather than rejecting it', () => {
     const items = detectRecurringItems(
       [
         row('2026-06-01', -9000, 'VARIABLE BILL', 3),
@@ -146,6 +150,27 @@ describe('detectRecurringItems', () => {
       ],
       ASOF,
     );
-    expect(items).toEqual([]);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.confidence).toBe('variable');
+  });
+
+  it('detects a real credit-card-style monthly payoff: solid cadence, ~195% amount swing, categorised as a transfer', () => {
+    const items = detectRecurringItems(
+      [
+        row('2025-12-08', 45467, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-01-07', 32554, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-02-07', 27423, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-03-10', 74840, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-04-07', 54291, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-05-08', 130073, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-06-07', 48446, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+        row('2026-07-08', 60355, 'PAYMENT RECEIVED - THANK YOU', 1, true),
+      ],
+      '2026-07-20', // within tolerance of the last real occurrence — the account's asOfDate, not the shared ASOF constant
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]!.cadence).toBe('monthly');
+    expect(items[0]!.confidence).toBe('variable');
+    expect(items[0]!.averageAmount).toBeGreaterThan(0);
   });
 });

@@ -11,6 +11,8 @@ export interface RecurringItemDto {
   categoryId: number | null;
   averageAmount: number; // integer pence, signed
   cadence: 'weekly' | 'monthly';
+  /** 'high' = amount is consistent; 'variable' = cadence is solid but the amount itself fluctuates (e.g. a credit card payoff). averageAmount is the best projection either way. */
+  confidence: 'high' | 'variable';
   nextDate: string;
   sampleCount: number;
 }
@@ -25,6 +27,7 @@ export interface ForecastEventDto {
   description: string;
   amount: number; // integer pence, signed
   categoryId: number | null;
+  confidence: 'high' | 'variable';
   runningBalance: number;
 }
 

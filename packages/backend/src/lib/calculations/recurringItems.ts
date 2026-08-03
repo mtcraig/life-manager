@@ -7,12 +7,15 @@ export interface RecurringAnalysisRow {
 }
 
 export type RecurringCadence = 'weekly' | 'monthly';
+export type RecurringConfidence = 'high' | 'variable';
 
 export interface RecurringItem {
   normalizedDescription: string;
   categoryId: number | null;
   averageAmount: number; // integer pence, signed
   cadence: RecurringCadence;
+  /** 'high' = amount consistent within tolerance; 'variable' = cadence is solid but the amount itself fluctuates (e.g. "pay off whatever the statement balance is"). averageAmount is still the best projection either way. */
+  confidence: RecurringConfidence;
   lastDate: string;
   nextExpectedDate: string;
   sampleCount: number;
@@ -43,20 +46,34 @@ function daysBetween(fromIso: string, toIso: string): number {
 /**
  * Detects recurring income/bills from transaction history by grouping same-
  * description rows and checking whether they repeat at a consistent weekly
- * or monthly cadence with a stable amount. Deliberately conservative — at
- * least 3 occurrences, a tight gap tolerance, and a tight amount tolerance —
- * because a missed recurring item just falls back to being counted as
- * ordinary variable spend, while a false positive would corrupt a forecast.
- * A single stray transaction sharing a description with a real recurring
- * series (breaking either the gap or amount pattern) invalidates the whole
- * group rather than being silently dropped, for the same reason.
+ * or monthly cadence. Deliberately conservative on cadence — at least 3
+ * occurrences and a tight gap tolerance — because a missed recurring item
+ * just falls back to being counted as ordinary variable spend, while a false
+ * positive would corrupt a forecast. A single stray transaction sharing a
+ * description with a real recurring series (breaking the gap pattern)
+ * invalidates the whole group rather than being silently dropped, for the
+ * same reason.
+ *
+ * Transfers are deliberately *not* excluded here (unlike money-flow-style
+ * spend analysis) — for a cash-flow forecast, a transfer is still a real
+ * movement of this account's money and must be modeled, the same way
+ * `getAccountBalanceTrend` includes transfers while `getMoneyFlow` excludes
+ * them. Excluding transfers would make a credit card's own monthly payoff
+ * invisible whenever a user categorises it as a transfer.
+ *
+ * Amount consistency is a confidence signal, not a gate: a series with a
+ * rock-solid cadence but a fluctuating amount (e.g. "pay off whatever was
+ * spent this month") is real and worth projecting using its average amount —
+ * rejecting it entirely left forecasts for accounts like this one-directional
+ * (only ever able to subtract, never credit back), since cadence is the
+ * actual false-positive guard here, not amount stability.
  */
 export function detectRecurringItems(rows: RecurringAnalysisRow[], asOfDate: string): RecurringItem[] {
   const windowStart = addDays(asOfDate, -HISTORY_WINDOW_DAYS);
   const byDescription = new Map<string, RecurringAnalysisRow[]>();
 
   for (const row of rows) {
-    if (row.isTransfer || row.date < windowStart || row.date > asOfDate) continue;
+    if (row.date < windowStart || row.date > asOfDate) continue;
     const list = byDescription.get(row.normalizedDescription) ?? [];
     list.push(row);
     byDescription.set(row.normalizedDescription, list);
@@ -90,7 +107,9 @@ export function detectRecurringItems(rows: RecurringAnalysisRow[], asOfDate: str
     const avgAbs = absAmounts.reduce((sum, a) => sum + a, 0) / absAmounts.length;
     const maxAbs = Math.max(...absAmounts);
     const minAbs = Math.min(...absAmounts);
-    if (avgAbs === 0 || (maxAbs - minAbs) / avgAbs > AMOUNT_TOLERANCE_FRACTION) continue;
+    if (avgAbs === 0) continue;
+    const confidence: RecurringConfidence =
+      (maxAbs - minAbs) / avgAbs <= AMOUNT_TOLERANCE_FRACTION ? 'high' : 'variable';
 
     const lastDate = sorted[sorted.length - 1]!.date;
     const maxGapAllowed = cadence === 'weekly' ? WEEKLY_MAX_GAP_DAYS : MONTHLY_MAX_GAP_DAYS;
@@ -110,6 +129,7 @@ export function detectRecurringItems(rows: RecurringAnalysisRow[], asOfDate: str
       categoryId,
       averageAmount: Math.round(amounts.reduce((sum, a) => sum + a, 0) / amounts.length),
       cadence,
+      confidence,
       lastDate,
       nextExpectedDate: addDays(lastDate, cadenceDays),
       sampleCount: sorted.length,

@@ -23,7 +23,7 @@ describe('computeForecast', () => {
     const result = computeForecast({
       ...BASE_PARAMS,
       recurringItems: [
-        { normalizedDescription: 'MORTGAGE', categoryId: 20, averageAmount: -50000, cadence: 'monthly', lastDate: '2026-07-03' },
+        { normalizedDescription: 'MORTGAGE', categoryId: 20, averageAmount: -50000, cadence: 'monthly', confidence: 'high', lastDate: '2026-07-03' },
       ],
       horizonDays: 10,
     });
@@ -31,7 +31,14 @@ describe('computeForecast', () => {
     const eventPoint = result.points.find((p) => p.date === '2026-08-02')!;
     expect(eventPoint.projectedBalance).toBe(50000);
     expect(result.events).toEqual([
-      { date: '2026-08-02', description: 'MORTGAGE', amount: -50000, categoryId: 20, runningBalance: 50000 },
+      {
+        date: '2026-08-02',
+        description: 'MORTGAGE',
+        amount: -50000,
+        categoryId: 20,
+        confidence: 'high',
+        runningBalance: 50000,
+      },
     ]);
   });
 
@@ -39,7 +46,7 @@ describe('computeForecast', () => {
     const result = computeForecast({
       ...BASE_PARAMS,
       recurringItems: [
-        { normalizedDescription: 'RENT', categoryId: 20, averageAmount: -80000, cadence: 'monthly', lastDate: '2026-06-15' },
+        { normalizedDescription: 'RENT', categoryId: 20, averageAmount: -80000, cadence: 'monthly', confidence: 'high', lastDate: '2026-06-15' },
       ],
       fromDate: '2026-08-01',
       horizonDays: 20,
@@ -53,7 +60,7 @@ describe('computeForecast', () => {
     const result = computeForecast({
       ...BASE_PARAMS,
       recurringItems: [
-        { normalizedDescription: 'CLEANER', categoryId: 3, averageAmount: -2000, cadence: 'weekly', lastDate: '2026-07-25' },
+        { normalizedDescription: 'CLEANER', categoryId: 3, averageAmount: -2000, cadence: 'weekly', confidence: 'high', lastDate: '2026-07-25' },
       ],
       horizonDays: 14,
     });
@@ -77,7 +84,7 @@ describe('computeForecast', () => {
     const result = computeForecast({
       ...BASE_PARAMS,
       recurringItems: [
-        { normalizedDescription: 'ENERGY DD', categoryId: 3, averageAmount: -9000, cadence: 'monthly', lastDate: '2026-07-01' },
+        { normalizedDescription: 'ENERGY DD', categoryId: 3, averageAmount: -9000, cadence: 'monthly', confidence: 'high', lastDate: '2026-07-01' },
       ],
       variableCategoryMonthlyAverages: new Map([[3, 31000]]),
       horizonDays: 3,
@@ -91,7 +98,7 @@ describe('computeForecast', () => {
       currentBalance: 25000,
       recurringItems: [
         // lastDate + 30 days = 2026-08-02, i.e. the second day of the horizon
-        { normalizedDescription: 'BIG BILL', categoryId: 20, averageAmount: -30000, cadence: 'monthly', lastDate: '2026-07-03' },
+        { normalizedDescription: 'BIG BILL', categoryId: 20, averageAmount: -30000, cadence: 'monthly', confidence: 'high', lastDate: '2026-07-03' },
       ],
       comfortableThreshold: 20000,
       horizonDays: 3,
@@ -104,8 +111,8 @@ describe('computeForecast', () => {
     const result = computeForecast({
       ...BASE_PARAMS,
       recurringItems: [
-        { normalizedDescription: 'BILL', categoryId: 20, averageAmount: -60000, cadence: 'monthly', lastDate: '2026-07-05' },
-        { normalizedDescription: 'SALARY', categoryId: 5, averageAmount: 200000, cadence: 'monthly', lastDate: '2026-07-01' },
+        { normalizedDescription: 'BILL', categoryId: 20, averageAmount: -60000, cadence: 'monthly', confidence: 'high', lastDate: '2026-07-05' },
+        { normalizedDescription: 'SALARY', categoryId: 5, averageAmount: 200000, cadence: 'monthly', confidence: 'high', lastDate: '2026-07-01' },
       ],
       horizonDays: 15,
     });
