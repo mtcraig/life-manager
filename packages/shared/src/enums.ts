@@ -19,6 +19,9 @@ export type PremiumFrequency = (typeof PREMIUM_FREQUENCIES)[number];
 export const INSURANCE_TYPES = ['car', 'home', 'life', 'health', 'travel', 'pet', 'other'] as const;
 export type InsuranceType = (typeof INSURANCE_TYPES)[number];
 
+export const SUBSCRIPTION_FREQUENCIES = ['monthly', 'annually'] as const;
+export type SubscriptionFrequency = (typeof SUBSCRIPTION_FREQUENCIES)[number];
+
 export const METER_TYPES = ['electricity', 'gas', 'water'] as const;
 export type MeterType = (typeof METER_TYPES)[number];
 

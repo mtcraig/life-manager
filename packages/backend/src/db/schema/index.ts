@@ -9,6 +9,7 @@ export * from './liabilities';
 export * from './projection-scenarios';
 export * from './insurance-plans';
 export * from './budgets';
+export * from './subscriptions';
 export * from './areas';
 export * from './contents-items';
 export * from './energy-readings';
