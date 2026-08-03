@@ -1,5 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import { env } from './config/env';
 import { registerCors } from './plugins/cors';
 import { registerErrorHandler } from './plugins/errorHandler';
 import { healthRoutes } from './modules/health/routes';
@@ -59,6 +63,21 @@ export async function buildFastifyApp() {
   await app.register(systemRoutes, { prefix: '/api' });
   await app.register(appSettingsRoutes, { prefix: '/api' });
   await app.register(jobRoutes, { prefix: '/api' });
+
+  // Only set by the packaged desktop app; the Vite dev server owns `/` otherwise.
+  if (env.STATIC_DIR) {
+    const staticDir = env.STATIC_DIR;
+    await app.register(fastifyStatic, { root: staticDir, wildcard: false });
+
+    app.setNotFoundHandler((request, reply) => {
+      if (request.raw.url?.startsWith('/api/')) {
+        reply.status(404).send({ error: { message: 'Not Found', statusCode: 404 } });
+        return;
+      }
+      // Client-side routing (react-router-dom) fallback for deep links.
+      reply.type('text/html').send(readFileSync(join(staticDir, 'index.html')));
+    });
+  }
 
   return app;
 }

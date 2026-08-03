@@ -8,7 +8,9 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace=@life-manager/backend",
     "dev:frontend": "npm run dev --workspace=@life-manager/frontend",
+    "dev:desktop": "npm run start --workspace=@life-manager/desktop",
     "build": "npm run build --workspaces",
+    "build:desktop": "npm run dist --workspace=@life-manager/desktop",
     "lint": "eslint .",
     "test": "vitest run"
   },

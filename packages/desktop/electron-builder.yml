@@ -1,0 +1,31 @@
+appId: com.mikethomascraig.lifemanager
+productName: Life Manager
+directories:
+  output: release
+  buildResources: assets
+files:
+  - main.cjs
+  - preload.cjs
+  - assets/**/*
+  - resources/**/*
+  - node_modules/**/*
+  - package.json
+# better-sqlite3's compiled .node addon can't be dlopen'd from inside an asar
+# archive - this makes electron-builder transparently redirect require()/fs
+# access for matching files to the sibling app.asar.unpacked/ directory.
+asarUnpack:
+  - '**/*.node'
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  # No icon checked in yet (see assets/README.md) - electron-builder falls
+  # back to Electron's default icon until assets/icon.ico is added, then
+  # uncomment the line below.
+  # icon: assets/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
