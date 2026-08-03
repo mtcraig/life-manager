@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { BudgetProgressItemDto } from '@life-manager/shared';
+import type { BudgetProgressDto, BudgetProgressItemDto } from '@life-manager/shared';
 import { useCategories } from '../../hooks/useCategories.js';
 import {
   useAnnualBudgetProgress,
@@ -15,6 +15,7 @@ import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION } from '../../theme/tokens.js';
 
 type BudgetsTab = 'overview' | 'manage';
+type PeriodMode = 'monthly' | 'annual';
 
 function shiftMonth(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
@@ -56,61 +57,22 @@ function BudgetProgressRow({ item }: { item: BudgetProgressItemDto }) {
   );
 }
 
-function YearToDateRow({ year }: { year: number }) {
-  const { data: annual, isPending, isError } = useAnnualBudgetProgress(year);
-  const remaining = annual ? annual.totalBudgeted - annual.totalActual : 0;
-
-  if (isPending) return <SkeletonStatGrid count={3} />;
-  if (isError) {
-    return <p className="text-sm text-red-600 dark:text-red-400">Failed to load year-to-date budget progress.</p>;
-  }
-  if (!annual) return null;
-
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      <div className="card-surface p-4">
-        <div className="text-xs uppercase tracking-wide text-slate-500">Budgeted ({year} to date)</div>
-        <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          {formatMoney(annual.totalBudgeted)}
-        </div>
-      </div>
-      <div className="card-surface p-4">
-        <div className="text-xs uppercase tracking-wide text-slate-500">Actual ({year} to date)</div>
-        <div className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          {formatMoney(annual.totalActual)}
-        </div>
-      </div>
-      <div className="card-surface p-4">
-        <div className="text-xs uppercase tracking-wide text-slate-500">Cumulative delta</div>
-        <div
-          className={`mt-1 text-2xl font-semibold ${
-            remaining >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}
-        >
-          {formatMoney(remaining)}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BudgetOverviewTab() {
-  const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const { data: progress, isPending, isError } = useBudgetProgress(toMonthIso(viewDate));
+/** Stat tiles + composition chart + category grid — identical shape for both the monthly and annual views, just fed different data. */
+function BudgetProgressSection({
+  progress,
+  isPending,
+  isError,
+  emptyMessage,
+}: {
+  progress: BudgetProgressDto | undefined;
+  isPending: boolean;
+  isError: boolean;
+  emptyMessage: string;
+}) {
   const remaining = progress ? progress.totalBudgeted - progress.totalActual : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <button type="button" onClick={() => setViewDate((d) => shiftMonth(d, -1))} className={BTN_ROW_ACTION}>
-          ← Prev
-        </button>
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{formatMonthLabel(viewDate)}</span>
-        <button type="button" onClick={() => setViewDate((d) => shiftMonth(d, 1))} className={BTN_ROW_ACTION}>
-          Next →
-        </button>
-      </div>
-
+    <>
       {isPending && <SkeletonStatGrid count={3} />}
       {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load budget progress.</p>}
 
@@ -148,7 +110,7 @@ function BudgetOverviewTab() {
 
           <div>
             {progress.items.length === 0 ? (
-              <p className="text-sm text-slate-500">No budgets active for this period — set one in the Manage tab.</p>
+              <p className="text-sm text-slate-500">{emptyMessage}</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {progress.items.map((item) => (
@@ -157,15 +119,65 @@ function BudgetOverviewTab() {
               </div>
             )}
           </div>
-
-          <div>
-            <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Year to date</h2>
-            <YearToDateRow year={viewDate.getFullYear()} />
-          </div>
         </>
       )}
+    </>
+  );
+}
+
+function MonthlyBudgetView() {
+  const [viewDate, setViewDate] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const { data: progress, isPending, isError } = useBudgetProgress(toMonthIso(viewDate));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setViewDate((d) => shiftMonth(d, -1))} className={BTN_ROW_ACTION}>
+          ← Prev
+        </button>
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{formatMonthLabel(viewDate)}</span>
+        <button type="button" onClick={() => setViewDate((d) => shiftMonth(d, 1))} className={BTN_ROW_ACTION}>
+          Next →
+        </button>
+      </div>
+      <BudgetProgressSection
+        progress={progress}
+        isPending={isPending}
+        isError={isError}
+        emptyMessage="No budgets active for this period — set one in the Manage tab."
+      />
     </div>
   );
+}
+
+/** Cumulative view across a whole year — useful for less-frequent, larger budgets (e.g. saving up for something) where a single month never tells the full story. */
+function AnnualBudgetView() {
+  const [year, setYear] = useState(() => new Date().getFullYear());
+  const { data: progress, isPending, isError } = useAnnualBudgetProgress(year);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setYear((y) => y - 1)} className={BTN_ROW_ACTION}>
+          ← Prev
+        </button>
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{year}</span>
+        <button type="button" onClick={() => setYear((y) => y + 1)} className={BTN_ROW_ACTION}>
+          Next →
+        </button>
+      </div>
+      <BudgetProgressSection
+        progress={progress}
+        isPending={isPending}
+        isError={isError}
+        emptyMessage="No budgets active this year — set one in the Manage tab."
+      />
+    </div>
+  );
+}
+
+function BudgetOverviewTab({ periodMode }: { periodMode: PeriodMode }) {
+  return periodMode === 'monthly' ? <MonthlyBudgetView /> : <AnnualBudgetView />;
 }
 
 function AddBudgetForm() {
@@ -295,22 +307,34 @@ function BudgetsList() {
 
 export function BudgetsPage() {
   const [tab, setTab] = useState<BudgetsTab>('overview');
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('monthly');
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Budgets</h1>
-        <Tabs
-          tabs={[
-            { value: 'overview', label: 'Overview' },
-            { value: 'manage', label: 'Manage' },
-          ]}
-          active={tab}
-          onChange={setTab}
-        />
+        {tab === 'overview' && (
+          <Tabs
+            tabs={[
+              { value: 'monthly', label: 'Monthly' },
+              { value: 'annual', label: 'Annual' },
+            ]}
+            active={periodMode}
+            onChange={setPeriodMode}
+          />
+        )}
       </div>
 
-      {tab === 'overview' && <BudgetOverviewTab />}
+      <Tabs
+        tabs={[
+          { value: 'overview', label: 'Overview' },
+          { value: 'manage', label: 'Manage' },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
+      {tab === 'overview' && <BudgetOverviewTab periodMode={periodMode} />}
       {tab === 'manage' && (
         <div className="space-y-4">
           <section className="card-surface p-4">
