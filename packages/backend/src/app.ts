@@ -15,6 +15,7 @@ import { liabilityRoutes } from './modules/liabilities/routes';
 import { projectionScenarioRoutes } from './modules/projection-scenarios/routes';
 import { wealthRoutes } from './modules/wealth/routes';
 import { insuranceRoutes } from './modules/insurance/routes';
+import { budgetRoutes } from './modules/budgets/routes';
 import { subscriptionRoutes } from './modules/subscriptions/routes';
 import { areaRoutes } from './modules/areas/routes';
 import { contentsRoutes } from './modules/contents/routes';
@@ -44,6 +45,7 @@ export async function buildFastifyApp() {
   await app.register(projectionScenarioRoutes, { prefix: '/api' });
   await app.register(wealthRoutes, { prefix: '/api' });
   await app.register(insuranceRoutes, { prefix: '/api' });
+  await app.register(budgetRoutes, { prefix: '/api' });
   await app.register(subscriptionRoutes, { prefix: '/api' });
   await app.register(areaRoutes, { prefix: '/api' });
   await app.register(contentsRoutes, { prefix: '/api' });
