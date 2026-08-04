@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { properties, propertyValuations } from '../../db/schema/properties';
 
@@ -39,9 +39,14 @@ export interface ValuationWriteFields {
 
 export function listProperties(includeArchived: boolean): PropertyRow[] {
   if (includeArchived) {
-    return db.select().from(properties).all();
+    return db.select().from(properties).orderBy(asc(properties.name)).all();
   }
-  return db.select().from(properties).where(isNull(properties.archivedAt)).all();
+  return db
+    .select()
+    .from(properties)
+    .where(isNull(properties.archivedAt))
+    .orderBy(asc(properties.name))
+    .all();
 }
 
 export function getPropertyByName(name: string): PropertyRow | undefined {

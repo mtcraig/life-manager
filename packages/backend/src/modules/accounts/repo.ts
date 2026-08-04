@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { ColumnMapping } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { accounts } from '../../db/schema/accounts';
@@ -27,7 +27,7 @@ export interface AccountWriteFields {
 }
 
 export function listAccounts(): AccountRow[] {
-  return db.select().from(accounts).all();
+  return db.select().from(accounts).orderBy(asc(accounts.name)).all();
 }
 
 export function getAccountById(id: number): AccountRow | undefined {

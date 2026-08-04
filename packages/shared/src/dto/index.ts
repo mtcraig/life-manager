@@ -19,5 +19,6 @@ export * from './forecast.js';
 export * from './area.js';
 export * from './contents-item.js';
 export * from './energy-reading.js';
+export * from './utility-tariff.js';
 export * from './app-settings.js';
 export * from './job.js';

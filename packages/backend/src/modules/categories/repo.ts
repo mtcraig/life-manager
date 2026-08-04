@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { categories } from '../../db/schema/categories';
 
@@ -20,7 +20,7 @@ export interface CategoryWriteFields {
 }
 
 export function listCategories(): CategoryRow[] {
-  return db.select().from(categories).all();
+  return db.select().from(categories).orderBy(asc(categories.name)).all();
 }
 
 export function getCategoryById(id: number): CategoryRow | undefined {
