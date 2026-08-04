@@ -10,8 +10,14 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+/**
+ * In Electron, localStorage can't survive across launches (the embedded
+ * backend binds to a new OS-assigned port each time, so every launch loads
+ * from a different origin) - the theme is persisted via a userData file
+ * through the main process instead, exposed over the preload bridge.
+ */
 function getInitialTheme(): Theme {
-  const stored = localStorage.getItem('theme');
+  const stored = window.electron?.isElectron ? window.electron.getInitialTheme() : localStorage.getItem('theme');
   if (stored === 'light' || stored === 'dark') return stored;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -21,7 +27,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
+    if (window.electron?.isElectron) {
+      window.electron.setTheme(theme);
+    } else {
+      localStorage.setItem('theme', theme);
+    }
   }, [theme]);
 
   function toggleTheme() {

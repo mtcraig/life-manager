@@ -1,11 +1,5 @@
 import { useShutdown } from '../../hooks/useSystem.js';
 
-declare global {
-  interface Window {
-    electron?: { isElectron: boolean };
-  }
-}
-
 function PowerIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
