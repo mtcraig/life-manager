@@ -8,6 +8,14 @@ import { METER_TYPES } from '../enums.js';
  * populated when meterType is 'water'. Rates are stored as real pounds (not
  * integer pence, unlike the rest of the app's money columns) since unit
  * rates commonly need sub-penny precision.
+ *
+ * calorificValue (MJ/m3) is only ever populated when meterType is 'gas' and
+ * is required there: gas meters read volume (m3) but gas is billed by energy
+ * content (£/kWh), so usage must be converted via
+ * kWh = m3 x 1.02264 (volume correction factor) x calorificValue / 3.6
+ * before the unit rate is applied. The calorific value varies over time and
+ * is printed on the supplier's bill, so it's entered per tariff rather than
+ * assumed.
  */
 export interface UtilityTariffDto {
   id: number;
@@ -21,6 +29,7 @@ export interface UtilityTariffDto {
   wastewaterStandingChargePerDay: number | null;
   wastewaterUnitRate: number | null;
   rainwaterRemovalStandingChargePerDay: number | null;
+  calorificValue: number | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -36,6 +45,7 @@ export const createUtilityTariffSchema = z.object({
   wastewaterStandingChargePerDay: z.number().nonnegative().optional(),
   wastewaterUnitRate: z.number().nonnegative().optional(),
   rainwaterRemovalStandingChargePerDay: z.number().nonnegative().optional(),
+  calorificValue: z.number().positive().optional(),
   notes: z.string().min(1).optional(),
 });
 export type CreateUtilityTariffInput = z.infer<typeof createUtilityTariffSchema>;

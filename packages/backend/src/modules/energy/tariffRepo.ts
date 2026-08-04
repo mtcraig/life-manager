@@ -13,6 +13,7 @@ export interface UtilityTariffRow {
   wastewaterStandingChargePerDay: number | null;
   wastewaterUnitRate: number | null;
   rainwaterRemovalStandingChargePerDay: number | null;
+  calorificValue: number | null;
   notes: string | null;
   createdAt: number;
   updatedAt: number;
@@ -28,6 +29,7 @@ export interface UtilityTariffWriteFields {
   wastewaterStandingChargePerDay: number | null;
   wastewaterUnitRate: number | null;
   rainwaterRemovalStandingChargePerDay: number | null;
+  calorificValue: number | null;
   notes: string | null;
 }
 

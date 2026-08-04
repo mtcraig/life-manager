@@ -24,6 +24,7 @@ interface TariffFormValues {
   wastewaterStandingChargePerDay: string;
   wastewaterUnitRate: string;
   rainwaterRemovalStandingChargePerDay: string;
+  calorificValue: string;
   notes: string;
 }
 
@@ -38,6 +39,7 @@ function emptyFormValues(): TariffFormValues {
     wastewaterStandingChargePerDay: '',
     wastewaterUnitRate: '',
     rainwaterRemovalStandingChargePerDay: '',
+    calorificValue: '',
     notes: '',
   };
 }
@@ -57,16 +59,21 @@ function formValuesFromTariff(tariff: UtilityTariffDto): TariffFormValues {
       tariff.rainwaterRemovalStandingChargePerDay !== null
         ? String(tariff.rainwaterRemovalStandingChargePerDay)
         : '',
+    calorificValue: tariff.calorificValue !== null ? String(tariff.calorificValue) : '',
     notes: tariff.notes ?? '',
   };
 }
 
 function buildTariffInput(values: TariffFormValues): { input: CreateUtilityTariffInput } | { error: string } {
   const isWater = values.meterType === 'water';
+  const isGas = values.meterType === 'gas';
   const hasWastewaterCharge = values.wastewaterStandingChargePerDay.trim() !== '';
   const hasWastewaterRate = values.wastewaterUnitRate.trim() !== '';
   if (isWater && hasWastewaterCharge !== hasWastewaterRate) {
     return { error: 'Wastewater standing charge and unit rate must both be set or both left blank.' };
+  }
+  if (isGas && values.calorificValue.trim() === '') {
+    return { error: 'Calorific value is required for gas tariffs — it\'s printed on your gas bill.' };
   }
 
   return {
@@ -86,6 +93,7 @@ function buildTariffInput(values: TariffFormValues): { input: CreateUtilityTarif
       ...(isWater && values.rainwaterRemovalStandingChargePerDay.trim() !== ''
         ? { rainwaterRemovalStandingChargePerDay: Number(values.rainwaterRemovalStandingChargePerDay) }
         : {}),
+      ...(isGas ? { calorificValue: Number(values.calorificValue) } : {}),
       notes: values.notes.trim() || undefined,
     },
   };
@@ -113,6 +121,7 @@ function TariffForm({
   }
 
   const isWater = values.meterType === 'water';
+  const isGas = values.meterType === 'gas';
   const primaryUnitLabel = values.meterType === 'electricity' ? 'kWh' : 'm3';
 
   return (
@@ -185,6 +194,20 @@ function TariffForm({
               className={INPUT_CLASS}
             />
           </label>
+          {isGas && (
+            <label className="text-sm text-slate-700 dark:text-slate-300">
+              Calorific value (MJ/m3)
+              <input
+                required
+                type="number"
+                step="0.0001"
+                placeholder="e.g. 39.5 — see your gas bill"
+                value={values.calorificValue}
+                onChange={(e) => set('calorificValue', e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </label>
+          )}
         </>
       )}
 
@@ -344,6 +367,9 @@ function formatDateRange(tariff: UtilityTariffDto): string {
 
 function formatTariffRateSummary(tariff: UtilityTariffDto): string {
   const parts = [`£${tariff.standingChargePerDay.toFixed(4)}/day + £${tariff.unitRate.toFixed(4)}/unit`];
+  if (tariff.calorificValue !== null) {
+    parts.push(`calorific value ${tariff.calorificValue} MJ/m3`);
+  }
   if (tariff.wastewaterStandingChargePerDay !== null && tariff.wastewaterUnitRate !== null) {
     parts.push(
       `wastewater £${tariff.wastewaterStandingChargePerDay.toFixed(4)}/day + £${tariff.wastewaterUnitRate.toFixed(4)}/unit`,

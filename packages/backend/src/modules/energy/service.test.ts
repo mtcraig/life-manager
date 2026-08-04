@@ -46,6 +46,7 @@ function makeTariff(overrides: Partial<UtilityTariffRow> & { id: number }): Util
     wastewaterStandingChargePerDay: null,
     wastewaterUnitRate: null,
     rainwaterRemovalStandingChargePerDay: null,
+    calorificValue: null,
     notes: null,
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -143,6 +144,44 @@ describe('createUtilityTariff', () => {
     expect(dto.wastewaterUnitRate).toBeNull();
     expect(dto.rainwaterRemovalStandingChargePerDay).toBeNull();
   });
+
+  it('rejects a gas tariff with no calorific value', () => {
+    expect(() =>
+      createUtilityTariff({
+        meterType: 'gas',
+        providerName: 'Provider A',
+        startDate: '2026-01-01',
+        standingChargePerDay: 0.3,
+        unitRate: 0.06,
+      }),
+    ).toThrow();
+  });
+
+  it('accepts a gas tariff with a calorific value and stores it', () => {
+    const dto = createUtilityTariff({
+      meterType: 'gas',
+      providerName: 'Provider A',
+      startDate: '2026-01-01',
+      standingChargePerDay: 0.3,
+      unitRate: 0.06,
+      calorificValue: 39.5,
+    });
+
+    expect(dto.calorificValue).toBe(39.5);
+  });
+
+  it('silently nulls calorific value for non-gas meter types even if sent', () => {
+    const dto = createUtilityTariff({
+      meterType: 'electricity',
+      providerName: 'Provider A',
+      startDate: '2026-01-01',
+      standingChargePerDay: 0.5,
+      unitRate: 0.2,
+      calorificValue: 39.5,
+    });
+
+    expect(dto.calorificValue).toBeNull();
+  });
 });
 
 describe('updateUtilityTariff', () => {
@@ -155,6 +194,26 @@ describe('updateUtilityTariff', () => {
 
   it('throws a 404 for an unknown id', () => {
     expect(() => updateUtilityTariff(999, { providerName: 'X' })).toThrow();
+  });
+
+  it('preserves the existing calorific value on a gas tariff when the update omits it', () => {
+    tariffsById.set(
+      1,
+      makeTariff({ id: 1, meterType: 'gas', startDate: '2026-01-01', endDate: null, calorificValue: 39.5 }),
+    );
+
+    const dto = updateUtilityTariff(1, { providerName: 'Renamed Provider' });
+
+    expect(dto.calorificValue).toBe(39.5);
+  });
+
+  it('rejects switching a tariff to gas without also providing a calorific value', () => {
+    tariffsById.set(
+      1,
+      makeTariff({ id: 1, meterType: 'electricity', startDate: '2026-01-01', endDate: null, calorificValue: null }),
+    );
+
+    expect(() => updateUtilityTariff(1, { meterType: 'gas' })).toThrow();
   });
 });
 

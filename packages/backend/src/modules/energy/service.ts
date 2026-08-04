@@ -134,6 +134,7 @@ function toTariffDto(row: UtilityTariffRow): UtilityTariffDto {
     wastewaterStandingChargePerDay: row.wastewaterStandingChargePerDay,
     wastewaterUnitRate: row.wastewaterUnitRate,
     rainwaterRemovalStandingChargePerDay: row.rainwaterRemovalStandingChargePerDay,
+    calorificValue: row.calorificValue,
     notes: row.notes,
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
@@ -177,8 +178,12 @@ export function createUtilityTariff(input: CreateUtilityTariffInput): UtilityTar
     throw new HttpError(400, 'endDate cannot be before startDate');
   }
   const isWater = input.meterType === 'water';
+  const isGas = input.meterType === 'gas';
   if (isWater) {
     validateWastewaterPairing(input);
+  }
+  if (isGas && input.calorificValue === undefined) {
+    throw new HttpError(400, 'Calorific value is required for gas tariffs');
   }
 
   const candidate = { startDate: input.startDate, endDate: input.endDate ?? null };
@@ -197,6 +202,7 @@ export function createUtilityTariff(input: CreateUtilityTariffInput): UtilityTar
     wastewaterStandingChargePerDay: isWater ? input.wastewaterStandingChargePerDay ?? null : null,
     wastewaterUnitRate: isWater ? input.wastewaterUnitRate ?? null : null,
     rainwaterRemovalStandingChargePerDay: isWater ? input.rainwaterRemovalStandingChargePerDay ?? null : null,
+    calorificValue: isGas ? input.calorificValue ?? null : null,
     notes: input.notes ?? null,
   });
   return toTariffDto(row);
@@ -217,6 +223,7 @@ export function updateUtilityTariff(id: number, input: UpdateUtilityTariffInput)
   }
 
   const isWater = meterType === 'water';
+  const isGas = meterType === 'gas';
   const wastewaterStandingChargePerDay =
     input.wastewaterStandingChargePerDay !== undefined
       ? input.wastewaterStandingChargePerDay
@@ -225,6 +232,12 @@ export function updateUtilityTariff(id: number, input: UpdateUtilityTariffInput)
     input.wastewaterUnitRate !== undefined ? input.wastewaterUnitRate : existingRow.wastewaterUnitRate ?? undefined;
   if (isWater) {
     validateWastewaterPairing({ wastewaterStandingChargePerDay, wastewaterUnitRate });
+  }
+
+  const calorificValue =
+    input.calorificValue !== undefined ? input.calorificValue : existingRow.calorificValue ?? undefined;
+  if (isGas && calorificValue === undefined) {
+    throw new HttpError(400, 'Calorific value is required for gas tariffs');
   }
 
   const candidate = { startDate, endDate: endDate ?? null };
@@ -250,6 +263,7 @@ export function updateUtilityTariff(id: number, input: UpdateUtilityTariffInput)
     wastewaterStandingChargePerDay: isWater ? wastewaterStandingChargePerDay ?? null : null,
     wastewaterUnitRate: isWater ? wastewaterUnitRate ?? null : null,
     rainwaterRemovalStandingChargePerDay: isWater ? rainwaterRemovalStandingChargePerDay ?? null : null,
+    calorificValue: isGas ? calorificValue ?? null : null,
     ...(input.notes !== undefined && { notes: input.notes ?? null }),
   });
   return toTariffDto(row as NonNullable<typeof row>);
@@ -271,6 +285,7 @@ function toTariffPeriod(row: UtilityTariffRow): TariffPeriod {
     wastewaterStandingChargePerDay: row.wastewaterStandingChargePerDay,
     wastewaterUnitRate: row.wastewaterUnitRate,
     rainwaterRemovalStandingChargePerDay: row.rainwaterRemovalStandingChargePerDay,
+    calorificValue: row.calorificValue,
   };
 }
 

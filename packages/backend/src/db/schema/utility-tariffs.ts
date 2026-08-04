@@ -11,6 +11,7 @@ export const utilityTariffs = sqliteTable('utility_tariffs', {
   wastewaterStandingChargePerDay: real('wastewater_standing_charge_per_day'),
   wastewaterUnitRate: real('wastewater_unit_rate'),
   rainwaterRemovalStandingChargePerDay: real('rainwater_removal_standing_charge_per_day'),
+  calorificValue: real('calorific_value'),
   notes: text('notes'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),

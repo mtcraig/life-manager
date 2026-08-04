@@ -13,7 +13,20 @@ export interface TariffPeriod {
   wastewaterStandingChargePerDay: number | null;
   wastewaterUnitRate: number | null;
   rainwaterRemovalStandingChargePerDay: number | null;
+  /** MJ/m3, gas only - see costForSubInterval for why gas usage needs this. */
+  calorificValue: number | null;
 }
+
+/**
+ * Gas meters read volume (m3) but gas is billed by energy content (£/kWh),
+ * so m3 usage must be converted to kWh before the unit rate is applied:
+ * kWh = m3 x volume correction factor x calorific value / 3.6. The volume
+ * correction factor is an industry-standard constant; the calorific value
+ * varies over time and comes from the tariff (copied off the supplier's
+ * bill), which is why it isn't folded into this constant.
+ */
+const GAS_VOLUME_CORRECTION_FACTOR = 1.02264;
+const MJ_TO_KWH = 3.6;
 
 export interface MonthlyCostPoint {
   month: string;
@@ -101,6 +114,11 @@ function findTariffForDate(dateIso: string, tariffs: TariffPeriod[]): TariffPeri
 }
 
 function costForSubInterval(meterType: MeterType, tariff: TariffPeriod, days: number, usage: number): number {
+  if (meterType === 'gas') {
+    const usageKwh = (usage * GAS_VOLUME_CORRECTION_FACTOR * (tariff.calorificValue ?? 0)) / MJ_TO_KWH;
+    return tariff.standingChargePerDay * days + tariff.unitRate * usageKwh;
+  }
+
   const primary = tariff.standingChargePerDay * days + tariff.unitRate * usage;
   if (meterType !== 'water') return primary;
   const wastewater =

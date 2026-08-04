@@ -9,6 +9,7 @@ function tariff(overrides: Partial<TariffPeriod> & Pick<TariffPeriod, 'startDate
     wastewaterStandingChargePerDay: null,
     wastewaterUnitRate: null,
     rainwaterRemovalStandingChargePerDay: null,
+    calorificValue: null,
     ...overrides,
   };
 }
@@ -62,6 +63,22 @@ describe('calculateMonthlyCosts', () => {
     expect(result[1]!.month).toBe('2026-02');
     expect(result[1]!.cost).toBeCloseTo(1 * 4 + 0.05 * (10 * 4), 6);
     expect(result[0]!.cost + result[1]!.cost).toBeCloseTo(1 * 11 + 0.05 * 110, 6);
+  });
+
+  it('converts gas usage from m3 to kWh via the volume correction factor and calorific value before applying the unit rate', () => {
+    const readings = [
+      { readingDate: '2026-01-01', value: 0 },
+      { readingDate: '2026-02-01', value: 310 },
+    ];
+    const tariffs = [
+      tariff({ startDate: '2026-01-01', standingChargePerDay: 0.3, unitRate: 0.06, calorificValue: 39.5 }),
+    ];
+
+    const result = calculateMonthlyCosts(readings, tariffs, 'gas');
+
+    const usageKwh = (310 * 1.02264 * 39.5) / 3.6;
+    expect(result).toHaveLength(1);
+    expect(result[0]!.cost).toBeCloseTo(0.3 * 31 + 0.06 * usageKwh, 6);
   });
 
   it('computes water cost from just the freshwater component when wastewater/rainwater are unset', () => {
