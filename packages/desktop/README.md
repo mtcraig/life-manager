@@ -58,6 +58,26 @@ npm run dist                # produces an NSIS installer and a portable .exe in 
   better-sqlite3` from the repo root to restore it. This doesn't affect CI,
   since each release build runs in a disposable checkout that's never reused
   for anything else.
+- **The rebuild step caches its own result, and that cache can lie**:
+  electron-builder's internal rebuild writes a `.forge-meta` marker (e.g.
+  `x64--130`) into `better-sqlite3`'s `build/Release` directory once it
+  believes it has rebuilt the module for a given arch/ABI, and on later runs
+  trusts that marker instead of re-checking the binary that's actually on
+  disk. Running `npm rebuild better-sqlite3` at the repo root (the previous
+  caveat) replaces the binary with a system-Node one but has no reason to know
+  about or clear this marker - so the *next* packaging run sees a stale cache
+  hit, skips the real rebuild, logs `finished` as if it worked, and ships a
+  binary still built for system Node's ABI. This was the cause of the
+  packaged app failing to open at all after a `npm rebuild better-sqlite3` in
+  between packaging runs. `prepare:resources` now runs
+  `scripts/clear-native-rebuild-cache.mjs` before every packaging step, which
+  deletes that marker so the rebuild can never trust stale state - this is no
+  longer something you need to think about, just documented here as the
+  reason that script exists.
+- **`prepare:resources` rebuilds the frontend too**: it runs
+  `npm run build --workspace=@life-manager/frontend` before copying
+  `packages/frontend/dist` in, so a stale, previously-built `dist` folder from
+  before a frontend change can't silently get repackaged.
 - **Dependency versions are duplicated, not shared**: this package declares
   its own copies of the backend's runtime dependencies instead of relying on
   the hoisted workspace `node_modules`, so that `electron-builder` can package

@@ -7,8 +7,10 @@
   "main": "main.cjs",
   "scripts": {
     "build-backend": "node scripts/build-backend.mjs",
+    "build-frontend": "npm run build --workspace=@life-manager/frontend",
     "copy-frontend": "node scripts/copy-frontend.mjs",
-    "prepare:resources": "npm run build-backend && npm run copy-frontend",
+    "clear-native-cache": "node scripts/clear-native-rebuild-cache.mjs",
+    "prepare:resources": "npm run build-backend && npm run build-frontend && npm run copy-frontend && npm run clear-native-cache",
     "package:dev": "electron-builder --win --dir",
     "start": "npm run prepare:resources && npm run package:dev && node scripts/run-dev.mjs",
     "dist": "npm run prepare:resources && electron-builder --win"
