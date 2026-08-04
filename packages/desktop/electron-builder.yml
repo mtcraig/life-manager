@@ -21,10 +21,7 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
-  # No icon checked in yet (see assets/README.md) - electron-builder falls
-  # back to Electron's default icon until assets/icon.ico is added, then
-  # uncomment the line below.
-  # icon: assets/icon.ico
+  icon: assets/icon.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

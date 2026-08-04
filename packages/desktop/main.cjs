@@ -1,11 +1,36 @@
-const { app, BrowserWindow, Menu } = require('electron');
-const { existsSync } = require('node:fs');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { existsSync, readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 
 app.setName('life-manager');
 
 let mainWindow = null;
 let fastifyApp = null;
+
+// Origin-scoped web storage (localStorage) can't survive across launches
+// here, since the embedded backend binds to a new OS-assigned port each
+// time (see PORT below) - so the theme preference is persisted to a plain
+// file in userData instead, read/written through the main process.
+function themeFilePath() {
+  return path.join(app.getPath('userData'), 'theme.json');
+}
+
+ipcMain.on('get-theme', (event) => {
+  try {
+    const { theme } = JSON.parse(readFileSync(themeFilePath(), 'utf8'));
+    event.returnValue = theme === 'light' || theme === 'dark' ? theme : null;
+  } catch {
+    event.returnValue = null;
+  }
+});
+
+ipcMain.on('set-theme', (_event, theme) => {
+  try {
+    writeFileSync(themeFilePath(), JSON.stringify({ theme }));
+  } catch {
+    // best-effort - losing a theme preference write isn't worth crashing over
+  }
+});
 
 // Resources are staged at build time (npm run prepare:resources) into
 // ./resources relative to this file. electron-builder packs this whole

@@ -8,8 +8,13 @@
     <script>
       // Set the theme before React mounts and before any stylesheet paints, so a
       // dark-mode user never sees a flash of the light theme on load/reload.
+      // In Electron, the preload script (which runs before this) exposes a
+      // synchronous userData-backed read instead of localStorage - see
+      // ThemeProvider.tsx for why localStorage can't be relied on there.
       (function () {
-        var stored = localStorage.getItem('theme');
+        var stored = window.electron && window.electron.isElectron
+          ? window.electron.getInitialTheme()
+          : localStorage.getItem('theme');
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
           document.documentElement.classList.add('dark');
