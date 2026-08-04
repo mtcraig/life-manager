@@ -1,0 +1,36 @@
+{
+  "name": "@life-manager/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Life Manager packaged as a standalone Windows desktop app",
+  "author": "Michael Craig",
+  "main": "main.cjs",
+  "scripts": {
+    "build-backend": "node scripts/build-backend.mjs",
+    "build-frontend": "npm run build --workspace=@life-manager/frontend",
+    "copy-frontend": "node scripts/copy-frontend.mjs",
+    "clear-native-cache": "node scripts/clear-native-rebuild-cache.mjs",
+    "prepare:resources": "npm run build-backend && npm run build-frontend && npm run copy-frontend && npm run clear-native-cache",
+    "package:dev": "electron-builder --win --dir",
+    "start": "npm run prepare:resources && npm run package:dev && node scripts/run-dev.mjs",
+    "dist": "npm run prepare:resources && electron-builder --win"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "@fastify/multipart": "^10.1.0",
+    "@fastify/static": "^10.1.2",
+    "better-sqlite3": "^11.5.0",
+    "chokidar": "^5.0.0",
+    "csv-parse": "^7.0.1",
+    "drizzle-orm": "^0.36.1",
+    "fastify": "^5.1.0",
+    "fuse.js": "^7.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "rimraf": "^6.0.1"
+  }
+}

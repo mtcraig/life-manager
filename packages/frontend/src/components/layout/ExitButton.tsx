@@ -1,5 +1,11 @@
 import { useShutdown } from '../../hooks/useSystem.js';
 
+declare global {
+  interface Window {
+    electron?: { isElectron: boolean };
+  }
+}
+
 function PowerIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -11,6 +17,11 @@ function PowerIcon() {
 
 export function ExitButton() {
   const shutdown = useShutdown();
+
+  // The packaged desktop app's sole quit path is closing its window; this
+  // button (and start.bat's server-restart model) only applies to the
+  // source-checkout dev workflow.
+  if (window.electron?.isElectron) return null;
 
   function handleExit() {
     const confirmed = window.confirm(

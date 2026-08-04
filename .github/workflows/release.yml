@@ -1,0 +1,42 @@
+name: Release Desktop App
+
+# Push a version tag (e.g. `git tag v0.3.0 && git push --tags`) to build the
+# Windows installer/portable exe and attach them to the matching GitHub
+# Release. See packages/desktop/README.md for what this actually packages.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspace dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build the frontend's static assets
+        run: npm run build --workspace=@life-manager/frontend
+
+      - name: Install desktop package dependencies (rebuilds better-sqlite3 for Electron's ABI)
+        run: npm install
+        working-directory: packages/desktop
+
+      - name: Bundle the backend, stage frontend assets, and package Windows installer/portable exe
+        run: npm run dist
+        working-directory: packages/desktop
+
+      - name: Attach installer artifacts to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/desktop/release/*.exe

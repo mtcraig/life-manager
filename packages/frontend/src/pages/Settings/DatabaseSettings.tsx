@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { TypeToConfirmDialog } from '../../components/TypeToConfirmDialog.js';
 import { DATABASE_BACKUP_URL } from '../../api/database.js';
 import { useImportDatabase, useResetDatabase } from '../../hooks/useDatabase.js';
 import { BTN_PRIMARY } from '../../theme/tokens.js';
@@ -11,16 +12,17 @@ export function DatabaseSettings() {
   const importDatabase = useImportDatabase();
   const [resetError, setResetError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleReset() {
+  function handleResetClick() {
     setResetError(null);
-    const typed = window.prompt(
-      'This permanently deletes every account, transaction, investment, and everything else in the app, ' +
-        'and cannot be undone. Download a backup first if you want to keep your data.\n\n' +
-        'Type RESET to confirm:',
-    );
-    if (typed !== 'RESET') return;
+    setConfirmingReset(true);
+  }
+
+  function handleConfirmedReset() {
+    setConfirmingReset(false);
     resetDatabase.mutate(undefined, {
       onError: (error) => setResetError(error instanceof Error ? error.message : String(error)),
     });
@@ -35,15 +37,13 @@ export function DatabaseSettings() {
     const file = event.target.files?.[0];
     event.target.value = ''; // allow re-selecting the same file later
     if (!file) return;
+    setPendingImportFile(file);
+  }
 
-    const typed = window.prompt(
-      'This replaces every account, transaction, investment, and everything else currently in the app ' +
-        "with the contents of the selected backup file, and cannot be undone. Download a backup of your " +
-        'current data first if you want to keep it.\n\n' +
-        'Type IMPORT to confirm:',
-    );
-    if (typed !== 'IMPORT') return;
-
+  function handleConfirmedImport() {
+    const file = pendingImportFile;
+    setPendingImportFile(null);
+    if (!file) return;
     importDatabase.mutate(file, {
       onError: (error) => setImportError(error instanceof Error ? error.message : String(error)),
     });
@@ -76,7 +76,7 @@ export function DatabaseSettings() {
           app to its default empty state. This cannot be undone — download a backup first if unsure.
         </p>
         <button
-          onClick={handleReset}
+          onClick={handleResetClick}
           disabled={resetDatabase.isPending}
           className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
         >
@@ -84,6 +84,33 @@ export function DatabaseSettings() {
         </button>
         {resetError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{resetError}</p>}
       </section>
+
+      {confirmingReset && (
+        <TypeToConfirmDialog
+          message={
+            'This permanently deletes every account, transaction, investment, and everything else in the app, ' +
+            'and cannot be undone. Download a backup first if you want to keep your data.'
+          }
+          confirmWord="RESET"
+          confirmLabel="Reset"
+          onConfirm={handleConfirmedReset}
+          onCancel={() => setConfirmingReset(false)}
+        />
+      )}
+
+      {pendingImportFile && (
+        <TypeToConfirmDialog
+          message={
+            `This replaces every account, transaction, investment, and everything else currently in the app ` +
+            `with the contents of "${pendingImportFile.name}", and cannot be undone. Download a backup of ` +
+            `your current data first if you want to keep it.`
+          }
+          confirmWord="IMPORT"
+          confirmLabel="Import"
+          onConfirm={handleConfirmedImport}
+          onCancel={() => setPendingImportFile(null)}
+        />
+      )}
     </div>
   );
 }

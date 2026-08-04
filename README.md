@@ -12,6 +12,8 @@ Nominatim API to place a pin on the map (see the Wealth section of
 - `packages/shared` — DTOs and Zod schemas shared between backend and frontend.
 - `packages/backend` — Fastify API, SQLite (via `better-sqlite3` + Drizzle ORM).
 - `packages/frontend` — Vite + React + Tailwind CSS, talking to the backend over `/api`.
+- `packages/desktop` — packages the app as a standalone Windows desktop app (Electron);
+  see **Desktop app** below.
 
 ## Prerequisites
 
@@ -53,6 +55,20 @@ npm run dev:frontend
 - Frontend: http://127.0.0.1:5173, proxies `/api` requests to the backend
 
 Open the frontend URL in your browser.
+
+## Desktop app
+
+For casual use without a terminal, a packaged Windows app is available: grab the
+installer or portable `.exe` from the project's
+[GitHub Releases](../../releases) page. It bundles the backend and frontend into a single
+double-clickable app — no Node/npm required, no terminal windows — storing its database
+in your Windows user profile (`%APPDATA%\life-manager\life-manager.db`) instead of inside
+the project folder. Closing the app window is the only step needed to quit it.
+
+New releases are built by pushing a version tag (`git tag v0.x.0 && git push --tags`),
+which triggers `.github/workflows/release.yml` to build and attach the installer. See
+`packages/desktop/README.md` for how the packaging itself works, and its known local-dev
+caveats if you want to build it yourself.
 
 ## Configuration
 
