@@ -9,9 +9,8 @@
     "build-backend": "node scripts/build-backend.mjs",
     "copy-frontend": "node scripts/copy-frontend.mjs",
     "prepare:resources": "npm run build-backend && npm run copy-frontend",
-    "rebuild-native": "electron-rebuild -f -w better-sqlite3",
-    "postinstall": "npm run rebuild-native",
-    "start": "npm run prepare:resources && electron .",
+    "package:dev": "electron-builder --win --dir",
+    "start": "npm run prepare:resources && npm run package:dev && node scripts/run-dev.mjs",
     "dist": "npm run prepare:resources && electron-builder --win"
   },
   "dependencies": {
@@ -27,7 +26,6 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.7.1",
     "electron": "33.4.11",
     "electron-builder": "^25.1.8",
     "esbuild": "^0.24.0",

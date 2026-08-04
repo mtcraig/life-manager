@@ -28,6 +28,17 @@ export default tseslint.config(
     },
   },
   {
+    // Node scripts (esbuild/rimraf build scripts, launching the packaged exe) -
+    // these use process/console but stay real ESM, unlike the .cjs files above.
+    files: ['packages/desktop/scripts/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+  },
+  {
     ignores: [
       '**/dist/**',
       '**/node_modules/**',
