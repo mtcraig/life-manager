@@ -24,17 +24,25 @@ await build({
   // which has no working plain-`require()` path (it uses `.js`-suffixed
   // relative imports resolved by tsx/tsc, not present as real files). Leaving
   // it un-externalized lets esbuild inline and transpile that source directly.
+  // chokidar v5+ is ESM-only - Electron's bundled Node can't require() it
+  // directly ("ERR_REQUIRE_ESM"), so it's deliberately left OFF this list and
+  // inlined/transpiled into the bundle by esbuild instead, same reasoning as
+  // @life-manager/shared above. fsevents is chokidar's optional macOS-only
+  // native binding (guarded by a runtime platform check in chokidar's own
+  // code) - it isn't installed on this Windows workspace, so it's kept
+  // external purely so esbuild doesn't fail trying to resolve it at bundle
+  // time; that require path never actually executes on Windows.
   external: [
     'fastify',
     '@fastify/cors',
     '@fastify/multipart',
     '@fastify/static',
     'better-sqlite3',
-    'chokidar',
     'csv-parse',
     'drizzle-orm',
     'fuse.js',
     'zod',
+    'fsevents',
   ],
   outfile: join(outDir, 'index.cjs'),
   logLevel: 'info',
