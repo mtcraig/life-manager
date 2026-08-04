@@ -1,0 +1,1 @@
+ALTER TABLE `utility_tariffs` ADD `calorific_value` real;

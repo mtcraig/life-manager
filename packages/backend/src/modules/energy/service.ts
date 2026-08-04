@@ -1,14 +1,26 @@
 import { parse } from 'csv-parse/sync';
-import { ENERGY_UNITS, METER_TYPES } from '@life-manager/shared';
+import { ENERGY_UNITS, METER_TYPES, normalizeWaterUsageToM3 } from '@life-manager/shared';
 import type {
   BulkImportEnergyReadingsResultDto,
   CreateEnergyReadingInput,
+  CreateUtilityTariffInput,
   EnergyReadingDto,
+  EnergyUnit,
+  MeterType,
+  UpdateUtilityTariffInput,
+  UtilityCostPointDto,
+  UtilityCostSeriesDto,
+  UtilityCostSeriesQuery,
+  UtilityTariffDto,
 } from '@life-manager/shared';
 import { HttpError } from '../../lib/httpError';
 import { normalizeCsvHeaders } from '../../lib/csv';
 import * as repo from './repo';
 import type { EnergyReadingRow } from './repo';
+import * as tariffRepo from './tariffRepo';
+import type { UtilityTariffRow } from './tariffRepo';
+import * as costCalculation from './costCalculation';
+import type { MeterReadingPoint, TariffPeriod } from './costCalculation';
 
 function toDto(row: EnergyReadingRow): EnergyReadingDto {
   return {
@@ -108,4 +120,230 @@ export function bulkImportEnergyReadings(csvContent: string): BulkImportEnergyRe
   }
 
   return { readingsCreated, readingsSkipped };
+}
+
+function toTariffDto(row: UtilityTariffRow): UtilityTariffDto {
+  return {
+    id: row.id,
+    meterType: row.meterType as UtilityTariffDto['meterType'],
+    providerName: row.providerName,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    standingChargePerDay: row.standingChargePerDay,
+    unitRate: row.unitRate,
+    wastewaterStandingChargePerDay: row.wastewaterStandingChargePerDay,
+    wastewaterUnitRate: row.wastewaterUnitRate,
+    rainwaterRemovalStandingChargePerDay: row.rainwaterRemovalStandingChargePerDay,
+    calorificValue: row.calorificValue,
+    notes: row.notes,
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
+}
+
+export function listUtilityTariffs(): UtilityTariffDto[] {
+  return tariffRepo.listUtilityTariffs().map(toTariffDto);
+}
+
+export function getUtilityTariff(id: number): UtilityTariffDto {
+  const row = tariffRepo.getUtilityTariffById(id);
+  if (!row) {
+    throw new HttpError(404, `Utility tariff ${id} not found`);
+  }
+  return toTariffDto(row);
+}
+
+function tariffsOverlap(
+  a: { startDate: string; endDate: string | null },
+  b: { startDate: string; endDate: string | null },
+): boolean {
+  const aEnd = a.endDate ?? '9999-12-31';
+  const bEnd = b.endDate ?? '9999-12-31';
+  return a.startDate <= bEnd && b.startDate <= aEnd;
+}
+
+function validateWastewaterPairing(input: {
+  wastewaterStandingChargePerDay?: number;
+  wastewaterUnitRate?: number;
+}): void {
+  const hasCharge = input.wastewaterStandingChargePerDay !== undefined;
+  const hasRate = input.wastewaterUnitRate !== undefined;
+  if (hasCharge !== hasRate) {
+    throw new HttpError(400, 'Wastewater standing charge and unit rate must both be set or both omitted');
+  }
+}
+
+export function createUtilityTariff(input: CreateUtilityTariffInput): UtilityTariffDto {
+  if (input.endDate !== undefined && input.endDate < input.startDate) {
+    throw new HttpError(400, 'endDate cannot be before startDate');
+  }
+  const isWater = input.meterType === 'water';
+  const isGas = input.meterType === 'gas';
+  if (isWater) {
+    validateWastewaterPairing(input);
+  }
+  if (isGas && input.calorificValue === undefined) {
+    throw new HttpError(400, 'Calorific value is required for gas tariffs');
+  }
+
+  const candidate = { startDate: input.startDate, endDate: input.endDate ?? null };
+  const existingForMeter = tariffRepo.listUtilityTariffs().filter((t) => t.meterType === input.meterType);
+  if (existingForMeter.some((t) => tariffsOverlap(t, candidate))) {
+    throw new HttpError(409, `A ${input.meterType} tariff already covers part of this date range`);
+  }
+
+  const row = tariffRepo.insertUtilityTariff({
+    meterType: input.meterType,
+    providerName: input.providerName,
+    startDate: input.startDate,
+    endDate: input.endDate ?? null,
+    standingChargePerDay: input.standingChargePerDay,
+    unitRate: input.unitRate,
+    wastewaterStandingChargePerDay: isWater ? input.wastewaterStandingChargePerDay ?? null : null,
+    wastewaterUnitRate: isWater ? input.wastewaterUnitRate ?? null : null,
+    rainwaterRemovalStandingChargePerDay: isWater ? input.rainwaterRemovalStandingChargePerDay ?? null : null,
+    calorificValue: isGas ? input.calorificValue ?? null : null,
+    notes: input.notes ?? null,
+  });
+  return toTariffDto(row);
+}
+
+export function updateUtilityTariff(id: number, input: UpdateUtilityTariffInput): UtilityTariffDto {
+  const existingRow = tariffRepo.getUtilityTariffById(id);
+  if (!existingRow) {
+    throw new HttpError(404, `Utility tariff ${id} not found`);
+  }
+
+  const meterType = (input.meterType ?? existingRow.meterType) as CreateUtilityTariffInput['meterType'];
+  const startDate = input.startDate ?? existingRow.startDate;
+  const endDate = input.endDate !== undefined ? input.endDate : existingRow.endDate ?? undefined;
+
+  if (endDate !== undefined && endDate < startDate) {
+    throw new HttpError(400, 'endDate cannot be before startDate');
+  }
+
+  const isWater = meterType === 'water';
+  const isGas = meterType === 'gas';
+  const wastewaterStandingChargePerDay =
+    input.wastewaterStandingChargePerDay !== undefined
+      ? input.wastewaterStandingChargePerDay
+      : existingRow.wastewaterStandingChargePerDay ?? undefined;
+  const wastewaterUnitRate =
+    input.wastewaterUnitRate !== undefined ? input.wastewaterUnitRate : existingRow.wastewaterUnitRate ?? undefined;
+  if (isWater) {
+    validateWastewaterPairing({ wastewaterStandingChargePerDay, wastewaterUnitRate });
+  }
+
+  const calorificValue =
+    input.calorificValue !== undefined ? input.calorificValue : existingRow.calorificValue ?? undefined;
+  if (isGas && calorificValue === undefined) {
+    throw new HttpError(400, 'Calorific value is required for gas tariffs');
+  }
+
+  const candidate = { startDate, endDate: endDate ?? null };
+  const otherTariffsForMeter = tariffRepo
+    .listUtilityTariffs()
+    .filter((t) => t.meterType === meterType && t.id !== id);
+  if (otherTariffsForMeter.some((t) => tariffsOverlap(t, candidate))) {
+    throw new HttpError(409, `A ${meterType} tariff already covers part of this date range`);
+  }
+
+  const rainwaterRemovalStandingChargePerDay =
+    input.rainwaterRemovalStandingChargePerDay !== undefined
+      ? input.rainwaterRemovalStandingChargePerDay
+      : existingRow.rainwaterRemovalStandingChargePerDay ?? undefined;
+
+  const row = tariffRepo.updateUtilityTariff(id, {
+    ...(input.meterType !== undefined && { meterType: input.meterType }),
+    ...(input.providerName !== undefined && { providerName: input.providerName }),
+    ...(input.startDate !== undefined && { startDate: input.startDate }),
+    ...(input.endDate !== undefined && { endDate: input.endDate ?? null }),
+    ...(input.standingChargePerDay !== undefined && { standingChargePerDay: input.standingChargePerDay }),
+    ...(input.unitRate !== undefined && { unitRate: input.unitRate }),
+    wastewaterStandingChargePerDay: isWater ? wastewaterStandingChargePerDay ?? null : null,
+    wastewaterUnitRate: isWater ? wastewaterUnitRate ?? null : null,
+    rainwaterRemovalStandingChargePerDay: isWater ? rainwaterRemovalStandingChargePerDay ?? null : null,
+    calorificValue: isGas ? calorificValue ?? null : null,
+    ...(input.notes !== undefined && { notes: input.notes ?? null }),
+  });
+  return toTariffDto(row as NonNullable<typeof row>);
+}
+
+export function deleteUtilityTariff(id: number): void {
+  const deleted = tariffRepo.deleteUtilityTariff(id);
+  if (!deleted) {
+    throw new HttpError(404, `Utility tariff ${id} not found`);
+  }
+}
+
+function toTariffPeriod(row: UtilityTariffRow): TariffPeriod {
+  return {
+    startDate: row.startDate,
+    endDate: row.endDate,
+    standingChargePerDay: row.standingChargePerDay,
+    unitRate: row.unitRate,
+    wastewaterStandingChargePerDay: row.wastewaterStandingChargePerDay,
+    wastewaterUnitRate: row.wastewaterUnitRate,
+    rainwaterRemovalStandingChargePerDay: row.rainwaterRemovalStandingChargePerDay,
+    calorificValue: row.calorificValue,
+  };
+}
+
+/**
+ * Always computes against the full reading/tariff history (never a
+ * year-filtered subset) and only slices/aggregates the *output* by year - a
+ * reading pair spanning a year boundary needs both readings to prorate the
+ * split correctly. Tariff rates are real pounds; the returned totals are
+ * rounded to integer pence so `formatMoney` keeps working unchanged.
+ */
+export function getUtilityCostSeries(query: UtilityCostSeriesQuery): UtilityCostSeriesDto {
+  const allReadings = repo.listEnergyReadings();
+  const allTariffs = tariffRepo.listUtilityTariffs();
+  const granularity: 'month' | 'year' = query.year !== undefined ? 'month' : 'year';
+
+  const seriesByMeter: Record<MeterType, Map<string, number>> = {
+    electricity: new Map(),
+    gas: new Map(),
+    water: new Map(),
+  };
+
+  for (const meterType of METER_TYPES) {
+    const readingsForMeter: MeterReadingPoint[] = allReadings
+      .filter((r) => r.meterType === meterType)
+      .map((r) => ({
+        readingDate: r.readingDate,
+        value:
+          meterType === 'water' ? normalizeWaterUsageToM3(r.value, r.unit as EnergyUnit) : r.value,
+      }));
+    const tariffsForMeter = allTariffs.filter((t) => t.meterType === meterType).map(toTariffPeriod);
+    const monthly = costCalculation.calculateMonthlyCosts(readingsForMeter, tariffsForMeter, meterType);
+
+    if (granularity === 'month') {
+      for (const point of monthly) {
+        if (point.month.startsWith(String(query.year))) {
+          seriesByMeter[meterType].set(point.month, Math.round(point.cost * 100));
+        }
+      }
+    } else {
+      for (const point of costCalculation.aggregateToYears(monthly)) {
+        seriesByMeter[meterType].set(point.year, Math.round(point.cost * 100));
+      }
+    }
+  }
+
+  const allPeriods = new Set<string>();
+  for (const meterType of METER_TYPES) {
+    for (const period of seriesByMeter[meterType].keys()) {
+      allPeriods.add(period);
+    }
+  }
+
+  const points: UtilityCostPointDto[] = [...allPeriods].sort().map((period) => ({
+    period,
+    electricity: seriesByMeter.electricity.get(period) ?? 0,
+    gas: seriesByMeter.gas.get(period) ?? 0,
+    water: seriesByMeter.water.get(period) ?? 0,
+  }));
+
+  return { granularity, points };
 }

@@ -13,6 +13,7 @@ export * from './subscriptions';
 export * from './areas';
 export * from './contents-items';
 export * from './energy-readings';
+export * from './utility-tariffs';
 export * from './ingestion-events';
 export * from './app-settings';
 export * from './jobs';

@@ -28,7 +28,7 @@ export function EnergyUsageChart({ readings, unit }: EnergyUsageChartProps) {
           itemStyle={{ color: colors.tooltipText }}
           labelStyle={{ color: colors.tooltipText }}
         />
-        <Line type="monotone" dataKey="value" stroke={colors.line} dot={{ r: 3 }} strokeWidth={2} />
+        <Line type="monotone" dataKey="value" stroke={colors.line} dot={false} strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>
   );

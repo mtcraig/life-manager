@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { vendors } from '../../db/schema/vendors';
 
@@ -14,7 +14,7 @@ export interface VendorWriteFields {
 }
 
 export function listVendors(): VendorRow[] {
-  return db.select().from(vendors).all();
+  return db.select().from(vendors).orderBy(asc(vendors.name)).all();
 }
 
 export function getVendorById(id: number): VendorRow | undefined {
