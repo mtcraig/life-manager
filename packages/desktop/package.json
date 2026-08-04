@@ -1,6 +1,6 @@
 {
   "name": "@life-manager/desktop",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Life Manager packaged as a standalone Windows desktop app",
   "author": "Michael Craig",
