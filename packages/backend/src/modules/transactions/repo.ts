@@ -295,6 +295,7 @@ export interface TopTransactionRow {
   description: string;
   amount: number;
   categoryName: string | null;
+  vendorName: string | null;
 }
 
 /**
@@ -322,9 +323,11 @@ export function listTopTransactionsByAmount(params: {
       description: transactions.description,
       amount: transactions.amount,
       categoryName: categories.name,
+      vendorName: vendors.name,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .leftJoin(vendors, eq(transactions.vendorId, vendors.id))
     .where(and(...conditions))
     .orderBy(params.direction === 'in' ? desc(transactions.amount) : asc(transactions.amount))
     .limit(params.limit)

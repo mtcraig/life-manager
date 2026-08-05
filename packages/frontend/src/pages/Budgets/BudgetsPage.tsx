@@ -11,6 +11,7 @@ import {
 import { BudgetCompositionChart } from '../../components/charts/BudgetCompositionChart.js';
 import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
 import { Tabs } from '../../components/Tabs.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
@@ -272,6 +273,7 @@ function AddBudgetForm() {
 }
 
 function BudgetsList() {
+  const dateFormat = useDateFormat();
   const { data: budgets, isPending, isError } = useBudgets();
   const { data: categories } = useCategories();
   const deleteBudget = useDeleteBudget();
@@ -292,8 +294,8 @@ function BudgetsList() {
               {categoryNameById.get(budget.categoryId) ?? 'Unknown category'}
             </div>
             <div className="text-xs text-slate-500">
-              {formatMoney(budget.amount)}/mo · From {budget.startDate}
-              {budget.endDate ? ` until ${budget.endDate}` : ' (ongoing)'}
+              {formatMoney(budget.amount)}/mo · From {formatDisplayDate(budget.startDate, dateFormat)}
+              {budget.endDate ? ` until ${formatDisplayDate(budget.endDate, dateFormat)}` : ' (ongoing)'}
             </div>
           </div>
           <button onClick={() => deleteBudget.mutate(budget.id)} className={BTN_ROW_ACTION_DANGER}>

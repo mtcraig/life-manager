@@ -1,4 +1,5 @@
 import type { ForecastDayHealth } from '@life-manager/shared';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 
 const HEALTH_CLASSES: Record<ForecastDayHealth, string> = {
   comfortable: 'bg-teal-500 dark:bg-teal-400',
@@ -13,6 +14,8 @@ const HEALTH_LABELS: Record<ForecastDayHealth, string> = {
 };
 
 export function ForecastCalendarStrip({ health }: { health: { date: string; status: ForecastDayHealth }[] }) {
+  const dateFormat = useDateFormat();
+
   return (
     <div>
       <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(15, minmax(0, 1fr))' }}>
@@ -20,8 +23,12 @@ export function ForecastCalendarStrip({ health }: { health: { date: string; stat
           <div
             key={day.date}
             title={`${day.date}: ${HEALTH_LABELS[day.status]}`}
-            className={`aspect-square rounded ${HEALTH_CLASSES[day.status]}`}
-          />
+            className={`flex aspect-square items-center justify-center rounded ${HEALTH_CLASSES[day.status]}`}
+          >
+            <span className="text-[9px] font-medium leading-none text-white/80">
+              {formatDisplayDate(day.date, dateFormat, { short: true })}
+            </span>
+          </div>
         ))}
       </div>
       <div className="mt-3 flex gap-4 text-xs text-slate-500">

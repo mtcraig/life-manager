@@ -1,7 +1,10 @@
 import type { ForecastEventDto } from '@life-manager/shared';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 
 export function UpcomingItemsLedger({ events }: { events: ForecastEventDto[] }) {
+  const dateFormat = useDateFormat();
+
   if (events.length === 0) {
     return (
       <p className="text-sm text-slate-500">No recurring items detected are due within this forecast horizon.</p>
@@ -21,7 +24,7 @@ export function UpcomingItemsLedger({ events }: { events: ForecastEventDto[] }) 
       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
         {events.map((event, i) => (
           <tr key={`${event.date}-${event.description}-${i}`}>
-            <td className="py-2 text-slate-700 dark:text-slate-300">{event.date}</td>
+            <td className="py-2 text-slate-700 dark:text-slate-300">{formatDisplayDate(event.date, dateFormat)}</td>
             <td className="py-2 capitalize text-slate-700 dark:text-slate-300">
               {event.description}
               {event.confidence === 'variable' && (

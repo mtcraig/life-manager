@@ -4,7 +4,7 @@ import { HttpError } from '../../lib/httpError';
 
 export async function databaseRoutes(app: FastifyInstance) {
   app.get('/database/backup', async (request, reply) => {
-    const buffer = service.backupDatabase();
+    const buffer = await service.backupDatabase();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     reply
       .header('Content-Type', 'application/octet-stream')

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { sqlite } from '../../db/client';
@@ -21,14 +21,27 @@ function listExpectedTables(): string[] {
 
 /**
  * A consistent, WAL-safe snapshot of the whole database as a Buffer, suitable
- * for streaming straight back as a file download. `serialize()` operates
- * through the live connection, so it always reflects every committed write
- * regardless of checkpoint state. The explicit checkpoint first is cheap
- * insurance, not strictly required.
+ * for sending straight back as a file download. Goes via `db.backup()` (SQLite's
+ * own Online Backup API, through the live connection, so it always reflects
+ * every committed write) to a scratch temp file rather than `sqlite.serialize()`
+ * - `serialize()` hands back a Buffer wrapping memory allocated outside V8's
+ * heap, which crashes the whole process with a V8 sandbox fatal error when
+ * this backend runs inside Electron's main process (packaged desktop app only;
+ * never reproduced in the plain Node dev server). Reading the temp file back
+ * with `readFileSync` produces an ordinary V8-heap-backed Buffer instead.
  */
-export function backupDatabase(): Buffer {
-  sqlite.pragma('wal_checkpoint(TRUNCATE)');
-  return sqlite.serialize();
+export async function backupDatabase(): Promise<Buffer> {
+  const tempPath = join(tmpdir(), `life-manager-backup-${randomUUID()}.db`);
+  try {
+    await sqlite.backup(tempPath);
+    return readFileSync(tempPath);
+  } finally {
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // best-effort cleanup; a stray file in os.tmpdir() is harmless
+    }
+  }
 }
 
 /**

@@ -33,7 +33,8 @@ vi.mock('./tariffRepo', () => ({
   deleteUtilityTariff: vi.fn((id: number) => tariffsById.delete(id)),
 }));
 
-const { createUtilityTariff, updateUtilityTariff, getUtilityCostSeries } = await import('./service');
+const { createUtilityTariff, updateUtilityTariff, getUtilityCostSeries, getMeterUsageSeries } =
+  await import('./service');
 
 function makeTariff(overrides: Partial<UtilityTariffRow> & { id: number }): UtilityTariffRow {
   return {
@@ -273,5 +274,56 @@ describe('getUtilityCostSeries', () => {
     const series = getUtilityCostSeries({ year: 2026 });
 
     expect(series.points.every((p) => p.gas === 0 && p.water === 0)).toBe(true);
+  });
+});
+
+describe('getMeterUsageSeries', () => {
+  it('needs no tariffs and always computes against the full reading history', () => {
+    readingRows = [
+      makeReading({ id: 1, readingDate: '2025-12-15', value: 0 }),
+      makeReading({ id: 2, readingDate: '2026-01-20', value: 360 }),
+    ];
+
+    const series = getMeterUsageSeries({ year: 2026 });
+
+    expect(series.granularity).toBe('month');
+    expect(series.points).toHaveLength(1);
+    // dailyUsageRate = 360/36 days = 10/day; Jan portion is 19 days = 190.
+    expect(series.points[0]!.period).toBe('2026-01');
+    expect(series.points[0]!.electricity).toBe(190);
+  });
+
+  it('returns yearly aggregates when no year is requested', () => {
+    readingRows = [
+      makeReading({ id: 1, meterType: 'gas', readingDate: '2025-01-01', value: 0, unit: 'm3' }),
+      makeReading({ id: 2, meterType: 'gas', readingDate: '2026-01-15', value: 379, unit: 'm3' }),
+    ];
+
+    const series = getMeterUsageSeries({});
+
+    expect(series.granularity).toBe('year');
+    expect(series.points.map((p) => p.period)).toEqual(['2025', '2026']);
+  });
+
+  it('defaults a meter with no data for a period to 0 rather than omitting it', () => {
+    readingRows = [
+      makeReading({ id: 1, readingDate: '2026-01-01', value: 0 }),
+      makeReading({ id: 2, readingDate: '2026-02-01', value: 100 }),
+    ];
+
+    const series = getMeterUsageSeries({ year: 2026 });
+
+    expect(series.points.every((p) => p.gas === 0 && p.water === 0)).toBe(true);
+  });
+
+  it('normalizes water readings to m3 before computing usage', () => {
+    readingRows = [
+      makeReading({ id: 1, meterType: 'water', readingDate: '2026-01-01', value: 0, unit: 'litres' }),
+      makeReading({ id: 2, meterType: 'water', readingDate: '2026-01-11', value: 50000, unit: 'litres' }),
+    ];
+
+    const series = getMeterUsageSeries({ year: 2026 });
+
+    expect(series.points[0]!.water).toBeCloseTo(50, 6);
   });
 });

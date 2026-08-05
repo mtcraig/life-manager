@@ -62,6 +62,7 @@ export interface TopTransactionDto {
   description: string;
   amount: number; // integer pence
   categoryName: string | null;
+  vendorName: string | null;
 }
 
 export interface TopTransactionsResultDto {

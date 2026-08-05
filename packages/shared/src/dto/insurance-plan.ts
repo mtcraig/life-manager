@@ -6,7 +6,8 @@ export interface InsurancePlanDto {
   id: number;
   name: string;
   type: (typeof INSURANCE_TYPES)[number];
-  coverageAmount: number;
+  coverageAmount: number | null;
+  excessAmount: number | null;
   premiumAmount: number;
   premiumFrequency: (typeof PREMIUM_FREQUENCIES)[number];
   effectiveDate: string;
@@ -27,7 +28,8 @@ export interface InsurancePlanDto {
 export const createInsurancePlanSchema = z.object({
   name: z.string().min(1),
   type: z.enum(INSURANCE_TYPES),
-  coverageAmount: z.number().int(),
+  coverageAmount: z.number().int().optional(),
+  excessAmount: z.number().int().optional(),
   premiumAmount: z.number().int(),
   premiumFrequency: z.enum(PREMIUM_FREQUENCIES),
   effectiveDate: z.string(),

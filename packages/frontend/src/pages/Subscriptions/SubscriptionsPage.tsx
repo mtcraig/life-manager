@@ -15,6 +15,7 @@ import {
   useUpdateSubscription,
 } from '../../hooks/useSubscriptions.js';
 import { SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_ACCENT, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
@@ -193,6 +194,7 @@ function AddSubscriptionForm() {
 }
 
 function SubscriptionsList() {
+  const dateFormat = useDateFormat();
   const { data: subscriptions, isPending, isError } = useSubscriptions();
   const { data: categories } = useCategories();
   const deleteSubscription = useDeleteSubscription();
@@ -363,7 +365,8 @@ function SubscriptionsList() {
               </div>
               <div className="text-xs text-slate-500">
                 {formatMoney(subscription.amount)}/{subscription.frequency === 'monthly' ? 'mo' : 'yr'} · Started{' '}
-                {subscription.startDate} · Renews {subscription.nextRenewalDate}
+                {formatDisplayDate(subscription.startDate, dateFormat)} · Renews{' '}
+                {formatDisplayDate(subscription.nextRenewalDate, dateFormat)}
                 {subscription.provider ? ` · ${subscription.provider}` : ''}
                 {subscription.categoryId ? ` · ${categoryNameById.get(subscription.categoryId) ?? ''}` : ''}
               </div>

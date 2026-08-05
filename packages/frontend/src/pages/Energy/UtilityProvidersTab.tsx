@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CreateUtilityTariffInput, MeterType, UtilityTariffDto } from '@life-manager/shared';
+import type { CreateUtilityTariffInput, DisplayDateFormat, MeterType, UtilityTariffDto } from '@life-manager/shared';
 import { METER_TYPES } from '@life-manager/shared';
 import {
   useCreateUtilityTariff,
@@ -8,6 +8,7 @@ import {
   useUtilityTariffs,
 } from '../../hooks/useUtilityTariffs.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
@@ -361,8 +362,9 @@ function EditTariffRow({ tariff, onDone }: { tariff: UtilityTariffDto; onDone: (
   );
 }
 
-function formatDateRange(tariff: UtilityTariffDto): string {
-  return tariff.endDate ? `${tariff.startDate} – ${tariff.endDate}` : `${tariff.startDate} – ongoing`;
+function formatDateRange(tariff: UtilityTariffDto, dateFormat: DisplayDateFormat): string {
+  const start = formatDisplayDate(tariff.startDate, dateFormat);
+  return tariff.endDate ? `${start} – ${formatDisplayDate(tariff.endDate, dateFormat)}` : `${start} – ongoing`;
 }
 
 function formatTariffRateSummary(tariff: UtilityTariffDto): string {
@@ -382,6 +384,7 @@ function formatTariffRateSummary(tariff: UtilityTariffDto): string {
 }
 
 function UtilityTariffsList() {
+  const dateFormat = useDateFormat();
   const { data: tariffs, isPending, isError } = useUtilityTariffs();
   const deleteTariff = useDeleteUtilityTariff();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -416,7 +419,7 @@ function UtilityTariffsList() {
                     <div>
                       <div className="font-medium text-slate-900 dark:text-slate-100">
                         {tariff.providerName}{' '}
-                        <span className="text-xs text-slate-500">({formatDateRange(tariff)})</span>
+                        <span className="text-xs text-slate-500">({formatDateRange(tariff, dateFormat)})</span>
                       </div>
                       <div className="text-xs text-slate-500">{formatTariffRateSummary(tariff)}</div>
                     </div>

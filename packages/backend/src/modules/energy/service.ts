@@ -7,6 +7,8 @@ import type {
   EnergyReadingDto,
   EnergyUnit,
   MeterType,
+  MeterUsagePointDto,
+  MeterUsageSeriesDto,
   UpdateUtilityTariffInput,
   UtilityCostPointDto,
   UtilityCostSeriesDto,
@@ -339,6 +341,61 @@ export function getUtilityCostSeries(query: UtilityCostSeriesQuery): UtilityCost
   }
 
   const points: UtilityCostPointDto[] = [...allPeriods].sort().map((period) => ({
+    period,
+    electricity: seriesByMeter.electricity.get(period) ?? 0,
+    gas: seriesByMeter.gas.get(period) ?? 0,
+    water: seriesByMeter.water.get(period) ?? 0,
+  }));
+
+  return { granularity, points };
+}
+
+/**
+ * Tariff-free counterpart to getUtilityCostSeries - same full-history-then-
+ * filter design (a reading pair spanning a year boundary must still be
+ * prorated correctly, which requires the full history, not just the
+ * requested year's readings) and the same per-meter-type/period shape.
+ */
+export function getMeterUsageSeries(query: UtilityCostSeriesQuery): MeterUsageSeriesDto {
+  const allReadings = repo.listEnergyReadings();
+  const granularity: 'month' | 'year' = query.year !== undefined ? 'month' : 'year';
+
+  const seriesByMeter: Record<MeterType, Map<string, number>> = {
+    electricity: new Map(),
+    gas: new Map(),
+    water: new Map(),
+  };
+
+  for (const meterType of METER_TYPES) {
+    const readingsForMeter: MeterReadingPoint[] = allReadings
+      .filter((r) => r.meterType === meterType)
+      .map((r) => ({
+        readingDate: r.readingDate,
+        value: meterType === 'water' ? normalizeWaterUsageToM3(r.value, r.unit as EnergyUnit) : r.value,
+      }));
+    const monthly = costCalculation.calculateMonthlyUsage(readingsForMeter);
+
+    if (granularity === 'month') {
+      for (const point of monthly) {
+        if (point.month.startsWith(String(query.year))) {
+          seriesByMeter[meterType].set(point.month, Math.round(point.usage * 100) / 100);
+        }
+      }
+    } else {
+      for (const point of costCalculation.aggregateUsageToYears(monthly)) {
+        seriesByMeter[meterType].set(point.year, Math.round(point.usage * 100) / 100);
+      }
+    }
+  }
+
+  const allPeriods = new Set<string>();
+  for (const meterType of METER_TYPES) {
+    for (const period of seriesByMeter[meterType].keys()) {
+      allPeriods.add(period);
+    }
+  }
+
+  const points: MeterUsagePointDto[] = [...allPeriods].sort().map((period) => ({
     period,
     electricity: seriesByMeter.electricity.get(period) ?? 0,
     gas: seriesByMeter.gas.get(period) ?? 0,

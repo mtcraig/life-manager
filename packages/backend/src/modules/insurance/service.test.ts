@@ -36,13 +36,15 @@ vi.mock('./repo', () => ({
   }),
 }));
 
-const { listInsurancePlans, cancelInsurancePlan } = await import('./service');
+const { listInsurancePlans, cancelInsurancePlan, createInsurancePlan, updateInsurancePlan } =
+  await import('./service');
 
 function makePlan(overrides: Partial<InsurancePlanRow> & { id: number }): InsurancePlanRow {
   return {
     name: 'Home policy',
     type: 'home',
     coverageAmount: 100000,
+    excessAmount: null,
     premiumAmount: 1000,
     premiumFrequency: 'monthly',
     effectiveDate: '2020-01-01',
@@ -102,5 +104,54 @@ describe('cancelInsurancePlan', () => {
 
   it('throws a 404 for an unknown id', () => {
     expect(() => cancelInsurancePlan(999)).toThrow();
+  });
+});
+
+describe('createInsurancePlan', () => {
+  it('allows coverageAmount to be omitted while an excessAmount is set', () => {
+    const dto = createInsurancePlan({
+      name: 'Car policy',
+      type: 'car',
+      excessAmount: 25000,
+      premiumAmount: 500,
+      premiumFrequency: 'monthly',
+      effectiveDate: '2026-01-01',
+      renewalDate: '2099-01-01',
+    });
+
+    expect(dto.coverageAmount).toBeNull();
+    expect(dto.excessAmount).toBe(25000);
+  });
+
+  it('defaults both fields to null when neither is provided', () => {
+    const dto = createInsurancePlan({
+      name: 'Life policy',
+      type: 'life',
+      premiumAmount: 500,
+      premiumFrequency: 'monthly',
+      effectiveDate: '2026-01-01',
+      renewalDate: '2099-01-01',
+    });
+
+    expect(dto.coverageAmount).toBeNull();
+    expect(dto.excessAmount).toBeNull();
+  });
+});
+
+describe('updateInsurancePlan', () => {
+  it('leaves excessAmount untouched when omitted from the update', () => {
+    plansById.set(1, makePlan({ id: 1, excessAmount: 10000 }));
+
+    const dto = updateInsurancePlan(1, { name: 'Renamed policy' });
+
+    expect(dto.excessAmount).toBe(10000);
+  });
+
+  it('sets excessAmount when provided in the update', () => {
+    plansById.set(1, makePlan({ id: 1, excessAmount: null }));
+
+    const dto = updateInsurancePlan(1, { excessAmount: 15000 });
+
+    expect(dto.excessAmount).toBe(15000);
   });
 });
