@@ -1,0 +1,1 @@
+ALTER TABLE `contents_items` ADD `property_id` integer REFERENCES properties(id);

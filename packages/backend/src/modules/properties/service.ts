@@ -96,7 +96,14 @@ export function deleteProperty(id: number): void {
   if (!repo.getPropertyById(id)) {
     throw new HttpError(404, `Property ${id} not found`);
   }
-  repo.deleteProperty(id);
+  try {
+    repo.deleteProperty(id);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('FOREIGN KEY constraint failed')) {
+      throw new HttpError(409, `Property ${id} is still in use by one or more contents items`);
+    }
+    throw error;
+  }
 }
 
 export function listValuations(propertyId: number): ValuationDto[] {

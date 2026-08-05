@@ -6,6 +6,7 @@ export interface ContentsItemRow {
   id: number;
   name: string;
   areaId: number;
+  propertyId: number | null;
   value: number;
   purchaseDate: string | null;
   notes: string | null;
@@ -16,6 +17,7 @@ export interface ContentsItemRow {
 export interface ContentsItemWriteFields {
   name: string;
   areaId: number;
+  propertyId: number | null;
   value: number;
   purchaseDate: string | null;
   notes: string | null;
