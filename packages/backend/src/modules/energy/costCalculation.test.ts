@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateToYears, calculateMonthlyCosts, type TariffPeriod } from './costCalculation';
+import {
+  aggregateToYears,
+  aggregateUsageToYears,
+  calculateMonthlyCosts,
+  calculateMonthlyUsage,
+  type TariffPeriod,
+} from './costCalculation';
 
 function tariff(overrides: Partial<TariffPeriod> & Pick<TariffPeriod, 'startDate'>): TariffPeriod {
   return {
@@ -154,6 +160,56 @@ describe('aggregateToYears', () => {
     expect(result).toEqual([
       { year: '2025', cost: 30 },
       { year: '2026', cost: 5 },
+    ]);
+  });
+});
+
+describe('calculateMonthlyUsage', () => {
+  it('computes prorated usage for a single interval fully within one month', () => {
+    const readings = [
+      { readingDate: '2026-01-01', value: 100 },
+      { readingDate: '2026-01-11', value: 150 },
+    ];
+
+    const result = calculateMonthlyUsage(readings);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.month).toBe('2026-01');
+    expect(result[0]!.usage).toBeCloseTo(50, 6);
+  });
+
+  it('splits usage across a calendar-month boundary proportionally by days', () => {
+    const readings = [
+      { readingDate: '2026-01-25', value: 0 },
+      { readingDate: '2026-02-05', value: 110 },
+    ];
+
+    const result = calculateMonthlyUsage(readings);
+
+    expect(result).toHaveLength(2);
+    expect(result[0]!.month).toBe('2026-01');
+    expect(result[0]!.usage).toBeCloseTo(10 * 7, 6);
+    expect(result[1]!.month).toBe('2026-02');
+    expect(result[1]!.usage).toBeCloseTo(10 * 4, 6);
+  });
+
+  it('contributes nothing for the first reading, which has no prior reading to diff against', () => {
+    const result = calculateMonthlyUsage([{ readingDate: '2026-01-01', value: 100 }]);
+    expect(result).toEqual([]);
+  });
+});
+
+describe('aggregateUsageToYears', () => {
+  it('sums monthly usage points sharing a year prefix', () => {
+    const result = aggregateUsageToYears([
+      { month: '2025-11', usage: 10 },
+      { month: '2025-12', usage: 20 },
+      { month: '2026-01', usage: 5 },
+    ]);
+
+    expect(result).toEqual([
+      { year: '2025', usage: 30 },
+      { year: '2026', usage: 5 },
     ]);
   });
 });

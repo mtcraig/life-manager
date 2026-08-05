@@ -10,6 +10,7 @@ import {
   useEnergyReadings,
 } from '../../hooks/useEnergy.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
 
@@ -183,6 +184,7 @@ function BulkImportForm() {
 }
 
 function ReadingsList({ selectedYear }: { selectedYear: YearFilterValue }) {
+  const dateFormat = useDateFormat();
   const { data: readings, isPending, isError } = useEnergyReadings();
   const deleteReading = useDeleteEnergyReading();
 
@@ -209,7 +211,7 @@ function ReadingsList({ selectedYear }: { selectedYear: YearFilterValue }) {
             <span className="text-sm text-slate-600 dark:text-slate-400">
               {reading.value} {reading.unit}
             </span>{' '}
-            <span className="text-xs text-slate-500">on {reading.readingDate}</span>
+            <span className="text-xs text-slate-500">on {formatDisplayDate(reading.readingDate, dateFormat)}</span>
             {reading.notes && <span className="ml-2 text-xs text-slate-500">· {reading.notes}</span>}
           </div>
           <button

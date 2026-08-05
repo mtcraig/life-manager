@@ -40,10 +40,12 @@ function TopTransactionsCard({
   title,
   transactions,
   tone,
+  showCategoryVendor,
 }: {
   title: string;
   transactions: TopTransactionDto[];
   tone: 'in' | 'out';
+  showCategoryVendor: boolean;
 }) {
   const colorClass = tone === 'in' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   return (
@@ -55,7 +57,9 @@ function TopTransactionsCard({
         <ul className="mt-2 space-y-1.5">
           {transactions.map((txn) => (
             <li key={txn.id} className="flex items-center justify-between gap-3 text-sm">
-              <span className="truncate text-slate-700 dark:text-slate-300">{txn.description}</span>
+              <span className="truncate text-slate-700 dark:text-slate-300">
+                {showCategoryVendor ? `${txn.categoryName ?? 'Uncategorised'} · ${txn.vendorName ?? '—'}` : txn.description}
+              </span>
               <span className={`shrink-0 font-medium ${colorClass}`}>{formatMoney(txn.amount)}</span>
             </li>
           ))}
@@ -105,6 +109,7 @@ export function HomePage() {
   } = useMoneyFlow(last30DaysQuery);
 
   const { data: topTransactions } = useTopTransactions({ ...last30DaysQuery, limit: TOP_TRANSACTIONS_LIMIT });
+  const showCategoryVendor = appSettings?.topTransactionsDisplay === 'category_vendor';
 
   const yearRangeEnd = selectedYear === currentYear ? today : new Date(selectedYear, 11, 31);
   const {
@@ -144,11 +149,13 @@ export function HomePage() {
             title="Top income (last 30 days)"
             transactions={topTransactions.topIncome}
             tone="in"
+            showCategoryVendor={showCategoryVendor}
           />
           <TopTransactionsCard
             title="Top expenses (last 30 days)"
             transactions={topTransactions.topExpenses}
             tone="out"
+            showCategoryVendor={showCategoryVendor}
           />
         </div>
       )}

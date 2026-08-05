@@ -52,7 +52,7 @@ function formatDate(ms: number): string {
   return `${y}-${m}-${day}`;
 }
 
-function daysBetween(fromIso: string, toIso: string): number {
+export function daysBetween(fromIso: string, toIso: string): number {
   return Math.round((parseDateMs(toIso) - parseDateMs(fromIso)) / MS_PER_DAY);
 }
 
@@ -73,7 +73,7 @@ function firstOfNextMonth(iso: string): string {
   return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
 }
 
-function monthOf(iso: string): string {
+export function monthOf(iso: string): string {
   return iso.slice(0, 7);
 }
 
@@ -85,7 +85,7 @@ function monthOf(iso: string): string {
  * (`[startDate, endDate + 1 day)`) so back-to-back tariffs tile with no gap
  * and no double-count - `endDate + 1 day` is the boundary, not `endDate`.
  */
-function buildBoundaries(intervalStart: string, intervalEnd: string, tariffs: TariffPeriod[]): string[] {
+export function buildBoundaries(intervalStart: string, intervalEnd: string, tariffs: TariffPeriod[]): string[] {
   const boundaries = new Set<string>([intervalStart, intervalEnd]);
 
   for (const tariff of tariffs) {
@@ -176,4 +176,54 @@ export function aggregateToYears(monthlyPoints: MonthlyCostPoint[]): { year: str
   return [...costByYear.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([year, cost]) => ({ year, cost }));
+}
+
+export interface MonthlyUsagePoint {
+  month: string;
+  usage: number;
+}
+
+/**
+ * Prorated usage per calendar month, independent of any tariff - splitting
+ * only on month boundaries (`buildBoundaries` with an empty tariff list)
+ * rather than also on tariff start/end dates like `calculateMonthlyCosts`
+ * does, since usage alone has no notion of a rate change.
+ */
+export function calculateMonthlyUsage(readings: MeterReadingPoint[]): MonthlyUsagePoint[] {
+  const sorted = [...readings].sort((a, b) => a.readingDate.localeCompare(b.readingDate));
+  const usageByMonth = new Map<string, number>();
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const from = sorted[i]!;
+    const to = sorted[i + 1]!;
+    const totalDays = daysBetween(from.readingDate, to.readingDate);
+    if (totalDays <= 0) continue;
+    const dailyUsageRate = (to.value - from.value) / totalDays;
+
+    const boundaries = buildBoundaries(from.readingDate, to.readingDate, []);
+    for (let j = 0; j < boundaries.length - 1; j++) {
+      const subStart = boundaries[j]!;
+      const subEnd = boundaries[j + 1]!;
+      const days = daysBetween(subStart, subEnd);
+      if (days <= 0) continue;
+      const usage = dailyUsageRate * days;
+      const month = monthOf(subStart);
+      usageByMonth.set(month, (usageByMonth.get(month) ?? 0) + usage);
+    }
+  }
+
+  return [...usageByMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, usage]) => ({ month, usage }));
+}
+
+export function aggregateUsageToYears(monthlyPoints: MonthlyUsagePoint[]): { year: string; usage: number }[] {
+  const usageByYear = new Map<string, number>();
+  for (const point of monthlyPoints) {
+    const year = point.month.slice(0, 4);
+    usageByYear.set(year, (usageByYear.get(year) ?? 0) + point.usage);
+  }
+  return [...usageByYear.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([year, usage]) => ({ year, usage }));
 }

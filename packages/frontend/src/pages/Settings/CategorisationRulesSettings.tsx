@@ -161,7 +161,12 @@ export function CategorisationRulesSettings() {
 
   const categoryNameById = new Map(categories?.map((c) => [c.id, c.name]));
   const vendorNameById = new Map(vendors?.map((v) => [v.id, v.name]));
-  const pagedRules = usePagedList(rules);
+  // Newest-added first for display — independent of the backend's priority-ordered
+  // list, which the fuzzy matcher relies on for tie-breaking and must stay as-is.
+  const sortedRules = rules
+    ? [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+    : rules;
+  const pagedRules = usePagedList(sortedRules);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

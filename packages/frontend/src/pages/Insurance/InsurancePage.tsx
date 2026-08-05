@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import type { CreateInsurancePlanInput, InsurancePlanDto, InsuranceType, PremiumFrequency } from '@life-manager/shared';
+import type {
+  CreateInsurancePlanInput,
+  InsurancePlanDto,
+  InsuranceType,
+  PremiumFrequency,
+  UpdateInsurancePlanInput,
+} from '@life-manager/shared';
 import { INSURANCE_TYPES, PREMIUM_FREQUENCIES } from '@life-manager/shared';
 import {
   useCancelInsurancePlan,
   useCreateInsurancePlan,
   useDeleteInsurancePlan,
   useInsurancePlans,
+  useUpdateInsurancePlan,
 } from '../../hooks/useInsurance.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
@@ -41,6 +49,7 @@ function AddInsurancePlanForm() {
   const [name, setName] = useState('');
   const [type, setType] = useState<InsuranceType | ''>('');
   const [coverageAmount, setCoverageAmount] = useState('');
+  const [excessAmount, setExcessAmount] = useState('');
   const [premiumAmount, setPremiumAmount] = useState('');
   const [premiumFrequency, setPremiumFrequency] = useState<PremiumFrequency>('monthly');
   const [effectiveDate, setEffectiveDate] = useState('');
@@ -57,7 +66,8 @@ function AddInsurancePlanForm() {
     const input: CreateInsurancePlanInput = {
       name,
       type: type as InsuranceType,
-      coverageAmount: Math.round(Number(coverageAmount) * 100),
+      coverageAmount: coverageAmount.trim() ? Math.round(Number(coverageAmount) * 100) : undefined,
+      excessAmount: excessAmount.trim() ? Math.round(Number(excessAmount) * 100) : undefined,
       premiumAmount: Math.round(Number(premiumAmount) * 100),
       premiumFrequency,
       effectiveDate,
@@ -72,6 +82,7 @@ function AddInsurancePlanForm() {
         setName('');
         setType('');
         setCoverageAmount('');
+        setExcessAmount('');
         setPremiumAmount('');
         setPremiumFrequency('monthly');
         setEffectiveDate('');
@@ -151,13 +162,22 @@ function AddInsurancePlanForm() {
         </label>
       )}
       <label className="text-sm text-slate-700 dark:text-slate-300">
-        Coverage amount (£)
+        Coverage amount (£, optional)
         <input
-          required
           type="number"
           step="0.01"
           value={coverageAmount}
           onChange={(e) => setCoverageAmount(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Excess amount (£, optional)
+        <input
+          type="number"
+          step="0.01"
+          value={excessAmount}
+          onChange={(e) => setExcessAmount(e.target.value)}
           className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
         />
       </label>
@@ -216,10 +236,198 @@ function AddInsurancePlanForm() {
   );
 }
 
+function EditInsurancePlanForm({ plan, onDone }: { plan: InsurancePlanDto; onDone: () => void }) {
+  const updatePlan = useUpdateInsurancePlan();
+  const [name, setName] = useState(plan.name);
+  const [type, setType] = useState<InsuranceType>(plan.type);
+  const [coverageAmount, setCoverageAmount] = useState(
+    plan.coverageAmount !== null ? (plan.coverageAmount / 100).toString() : '',
+  );
+  const [excessAmount, setExcessAmount] = useState(
+    plan.excessAmount !== null ? (plan.excessAmount / 100).toString() : '',
+  );
+  const [premiumAmount, setPremiumAmount] = useState((plan.premiumAmount / 100).toString());
+  const [premiumFrequency, setPremiumFrequency] = useState<PremiumFrequency>(plan.premiumFrequency);
+  const [effectiveDate, setEffectiveDate] = useState(plan.effectiveDate);
+  const [renewalDate, setRenewalDate] = useState(plan.renewalDate);
+  const [provider, setProvider] = useState(plan.provider ?? '');
+  const [policyNumber, setPolicyNumber] = useState(plan.policyNumber ?? '');
+  const [vehicleRegistration, setVehicleRegistration] = useState(plan.vehicleRegistration ?? '');
+  const [postcode, setPostcode] = useState(plan.postcode ?? '');
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError(null);
+    const input: UpdateInsurancePlanInput = {
+      name,
+      type,
+      coverageAmount: coverageAmount.trim() ? Math.round(Number(coverageAmount) * 100) : undefined,
+      excessAmount: excessAmount.trim() ? Math.round(Number(excessAmount) * 100) : undefined,
+      premiumAmount: Math.round(Number(premiumAmount) * 100),
+      premiumFrequency,
+      effectiveDate,
+      renewalDate,
+      provider: provider.trim() || undefined,
+      policyNumber: policyNumber.trim() || undefined,
+      vehicleRegistration: type === 'car' ? vehicleRegistration.trim() || undefined : undefined,
+      postcode: type === 'home' ? postcode.trim() || undefined : undefined,
+    };
+    updatePlan.mutate(
+      { id: plan.id, input },
+      {
+        onSuccess: () => onDone(),
+        onError: (err) => setError(err instanceof Error ? err.message : String(err)),
+      },
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Name
+        <input
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Type
+        <select
+          required
+          value={type}
+          onChange={(e) => setType(e.target.value as InsuranceType)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        >
+          {INSURANCE_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {humanizeEnumValue(t)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Provider (optional)
+        <input
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Policy number (optional)
+        <input
+          value={policyNumber}
+          onChange={(e) => setPolicyNumber(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      {type === 'car' && (
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Vehicle registration
+          <input
+            value={vehicleRegistration}
+            onChange={(e) => setVehicleRegistration(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+      )}
+      {type === 'home' && (
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Postcode
+          <input
+            value={postcode}
+            onChange={(e) => setPostcode(e.target.value)}
+            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+      )}
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Coverage amount (£, optional)
+        <input
+          type="number"
+          step="0.01"
+          value={coverageAmount}
+          onChange={(e) => setCoverageAmount(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Excess amount (£, optional)
+        <input
+          type="number"
+          step="0.01"
+          value={excessAmount}
+          onChange={(e) => setExcessAmount(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Premium amount (£)
+        <input
+          required
+          type="number"
+          step="0.01"
+          value={premiumAmount}
+          onChange={(e) => setPremiumAmount(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Premium frequency
+        <select
+          value={premiumFrequency}
+          onChange={(e) => setPremiumFrequency(e.target.value as PremiumFrequency)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        >
+          {PREMIUM_FREQUENCIES.map((frequency) => (
+            <option key={frequency} value={frequency}>
+              {humanizeEnumValue(frequency)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Effective date
+        <input
+          required
+          type="date"
+          value={effectiveDate}
+          onChange={(e) => setEffectiveDate(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <label className="text-sm text-slate-700 dark:text-slate-300">
+        Renewal date
+        <input
+          required
+          type="date"
+          value={renewalDate}
+          onChange={(e) => setRenewalDate(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </label>
+      <div className="flex items-end gap-2">
+        <button type="submit" disabled={updatePlan.isPending} className={BTN_PRIMARY}>
+          {updatePlan.isPending ? 'Saving…' : 'Save'}
+        </button>
+        <button type="button" onClick={onDone} className={BTN_ROW_ACTION}>
+          Cancel
+        </button>
+      </div>
+      {error && <p className="col-span-full text-sm text-red-600 dark:text-red-400">{error}</p>}
+    </form>
+  );
+}
+
 function InsurancePlansList() {
+  const dateFormat = useDateFormat();
   const { data: plans, isPending, isError } = useInsurancePlans();
   const deletePlan = useDeleteInsurancePlan();
   const cancelPlan = useCancelInsurancePlan();
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   if (isPending) return <SkeletonRows rows={3} />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load insurance plans.</p>;
@@ -230,6 +438,14 @@ function InsurancePlansList() {
   return (
     <ul className="divide-y divide-slate-100 dark:divide-slate-800">
       {plans.map((plan) => {
+        if (editingId === plan.id) {
+          return (
+            <li key={plan.id} className="py-3">
+              <EditInsurancePlanForm plan={plan} onDone={() => setEditingId(null)} />
+            </li>
+          );
+        }
+
         const status = deriveInsuranceStatus(plan);
         return (
           <li key={plan.id} className="flex items-center justify-between py-3">
@@ -241,9 +457,11 @@ function InsurancePlansList() {
                 </span>
               </div>
               <div className="text-xs text-slate-500">
-                Coverage {formatMoney(plan.coverageAmount)} · Premium {formatMoney(plan.premiumAmount)}/
-                {plan.premiumFrequency === 'monthly' ? 'mo' : 'yr'} · Effective {plan.effectiveDate} · Renews{' '}
-                {plan.renewalDate}
+                {plan.coverageAmount !== null ? `Coverage ${formatMoney(plan.coverageAmount)} · ` : ''}
+                {plan.excessAmount !== null ? `Excess ${formatMoney(plan.excessAmount)} · ` : ''}
+                Premium {formatMoney(plan.premiumAmount)}/{plan.premiumFrequency === 'monthly' ? 'mo' : 'yr'} ·
+                Effective {formatDisplayDate(plan.effectiveDate, dateFormat)} · Renews{' '}
+                {formatDisplayDate(plan.renewalDate, dateFormat)}
                 {plan.provider ? ` · ${plan.provider}` : ''}
                 {plan.policyNumber ? ` · Policy ${plan.policyNumber}` : ''}
                 {plan.vehicleRegistration ? ` · ${plan.vehicleRegistration}` : ''}
@@ -251,6 +469,9 @@ function InsurancePlansList() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => setEditingId(plan.id)} className={BTN_ROW_ACTION}>
+                Edit
+              </button>
               {!plan.cancelledAt && (
                 <button onClick={() => cancelPlan.mutate(plan.id)} className={BTN_ROW_ACTION}>
                   Cancel

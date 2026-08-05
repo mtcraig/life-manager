@@ -2,6 +2,7 @@ import type {
   BulkImportEnergyReadingsResultDto,
   CreateEnergyReadingInput,
   EnergyReadingDto,
+  MeterUsageSeriesDto,
   UtilityCostSeriesDto,
 } from '@life-manager/shared';
 import { apiFetch } from './client.js';
@@ -20,6 +21,10 @@ export function fetchEnergyReadings() {
 
 export function fetchUtilityCostSeries(query: { year?: number }) {
   return apiFetch<UtilityCostSeriesDto>(`/energy-utility-costs?${toParams(query)}`);
+}
+
+export function fetchMeterUsageSeries(query: { year?: number }) {
+  return apiFetch<MeterUsageSeriesDto>(`/energy-meter-usage?${toParams(query)}`);
 }
 
 export function createEnergyReading(input: CreateEnergyReadingInput) {

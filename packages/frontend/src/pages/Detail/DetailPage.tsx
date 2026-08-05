@@ -9,10 +9,12 @@ import {
 } from '../../hooks/useTransactions.js';
 import { transactionExportUrl } from '../../api/transactions.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
+import { formatDisplayDate, useDateFormat } from '../../lib/formatDate.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { BTN_PRIMARY } from '../../theme/tokens.js';
 
 export function DetailPage() {
+  const dateFormat = useDateFormat();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const { data: vendors } = useVendors();
@@ -171,7 +173,9 @@ export function DetailPage() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {data.items.map((tx) => (
                   <tr key={tx.id}>
-                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">{tx.date}</td>
+                    <td className="px-4 py-2 text-slate-900 dark:text-slate-100">
+                      {formatDisplayDate(tx.date, dateFormat)}
+                    </td>
                     <td className="px-4 py-2 text-slate-900 dark:text-slate-100">
                       {accountNameById.get(tx.accountId) ?? tx.accountId}
                     </td>

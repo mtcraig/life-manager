@@ -66,4 +66,9 @@ export async function energyRoutes(app: FastifyInstance) {
     const query = utilityCostSeriesQuerySchema.parse(request.query);
     return service.getUtilityCostSeries(query);
   });
+
+  app.get('/energy-meter-usage', async (request) => {
+    const query = utilityCostSeriesQuerySchema.parse(request.query);
+    return service.getMeterUsageSeries(query);
+  });
 }

@@ -6,7 +6,8 @@ export interface InsurancePlanRow {
   id: number;
   name: string;
   type: string;
-  coverageAmount: number;
+  coverageAmount: number | null;
+  excessAmount: number | null;
   premiumAmount: number;
   premiumFrequency: string;
   effectiveDate: string;
@@ -24,7 +25,8 @@ export interface InsurancePlanRow {
 export interface InsurancePlanWriteFields {
   name: string;
   type: string;
-  coverageAmount: number;
+  coverageAmount: number | null;
+  excessAmount: number | null;
   premiumAmount: number;
   premiumFrequency: string;
   effectiveDate: string;

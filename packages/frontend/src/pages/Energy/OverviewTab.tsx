@@ -2,8 +2,9 @@ import type { EnergyReadingDto, MeterType } from '@life-manager/shared';
 import { METER_TYPES, normalizeWaterUsageToM3 } from '@life-manager/shared';
 import type { YearFilterValue } from '../../lib/yearFilter.js';
 import { dateRangeForYear } from '../../lib/yearFilter.js';
-import { useEnergyReadings, useUtilityCostSeries } from '../../hooks/useEnergy.js';
+import { useEnergyReadings, useMeterUsageSeries, useUtilityCostSeries } from '../../hooks/useEnergy.js';
 import { EnergyUsageChart } from '../../components/charts/EnergyUsageChart.js';
+import { MeterUsageBarChart } from '../../components/charts/MeterUsageBarChart.js';
 import { UtilityCostChart } from '../../components/charts/UtilityCostChart.js';
 import { SkeletonChart } from '../../components/Skeleton.js';
 
@@ -18,6 +19,7 @@ function filterReadingsByYear(readings: EnergyReadingDto[] | undefined, selected
 function UsageCharts({ selectedYear }: { selectedYear: YearFilterValue }) {
   const { data: readings } = useEnergyReadings();
   const filtered = filterReadingsByYear(readings, selectedYear);
+  const { data: usageSeries } = useMeterUsageSeries(selectedYear === 'all' ? undefined : selectedYear);
 
   if (!filtered || filtered.length === 0) return null;
 
@@ -33,6 +35,7 @@ function UsageCharts({ selectedYear }: { selectedYear: YearFilterValue }) {
           ? readingsForMeter.map((r) => ({ ...r, value: normalizeWaterUsageToM3(r.value, r.unit) }))
           : readingsForMeter;
         const unit = isWater ? 'm3' : firstReading.unit;
+        const usagePoints = (usageSeries?.points ?? []).map((p) => ({ period: p.period, usage: p[meterType] }));
 
         return (
           <div key={meterType} className="card-surface p-4">
@@ -40,6 +43,14 @@ function UsageCharts({ selectedYear }: { selectedYear: YearFilterValue }) {
               {meterType}
             </h3>
             <EnergyUsageChart readings={chartReadings} unit={unit} />
+            {usagePoints.length > 0 && (
+              <div className="mt-3">
+                <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Usage by month
+                </h4>
+                <MeterUsageBarChart points={usagePoints} unit={unit} meterType={meterType} />
+              </div>
+            )}
           </div>
         );
       })}

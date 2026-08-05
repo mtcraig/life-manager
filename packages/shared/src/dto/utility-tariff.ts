@@ -70,3 +70,16 @@ export interface UtilityCostSeriesDto {
   granularity: 'month' | 'year';
   points: UtilityCostPointDto[];
 }
+
+/** period is 'YYYY-MM' when a year was requested, 'YYYY' when aggregated across all time. Values are raw meter units (kWh/m3), not money. */
+export interface MeterUsagePointDto {
+  period: string;
+  electricity: number;
+  gas: number;
+  water: number;
+}
+
+export interface MeterUsageSeriesDto {
+  granularity: 'month' | 'year';
+  points: MeterUsagePointDto[];
+}
