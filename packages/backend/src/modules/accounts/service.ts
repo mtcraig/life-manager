@@ -50,6 +50,21 @@ function triggerInitialIngest(accountId: number): number | null {
   return job.id;
 }
 
+/**
+ * Startup catch-up: ingests every currently-present file in each watched-folder
+ * account's folder once at boot, since chokidar's ignoreInitial:true (see
+ * ingestion/watcher.ts) never picks up files that were already there before the
+ * watcher started. Dedupe-hash checking in prepareIngestPlan makes redundant
+ * re-scans harmless, so this runs unconditionally on every boot.
+ */
+export function triggerCatchUpIngestForWatchedAccounts(): void {
+  for (const account of repo.listAccounts()) {
+    if (account.ingestionMode === 'watched' && account.folderPath) {
+      triggerInitialIngest(account.id);
+    }
+  }
+}
+
 export function createAccount(input: CreateAccountInput): AccountMutationResultDto {
   try {
     const row = repo.insertAccount({

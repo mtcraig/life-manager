@@ -25,7 +25,7 @@ export function ForecastCalendarStrip({ health }: { health: { date: string; stat
             title={`${day.date}: ${HEALTH_LABELS[day.status]}`}
             className={`flex aspect-square items-center justify-center rounded ${HEALTH_CLASSES[day.status]}`}
           >
-            <span className="text-[9px] font-medium leading-none text-white/80">
+            <span className="text-[11px] font-medium leading-none text-white/80">
               {formatDisplayDate(day.date, dateFormat, { short: true })}
             </span>
           </div>

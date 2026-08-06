@@ -20,6 +20,7 @@ export function DetailPage() {
   const { data: vendors } = useVendors();
   const updateCategory = useUpdateTransactionCategory();
   const updateVendor = useUpdateTransactionVendor();
+  const [description, setDescription] = useState('');
   const [accountId, setAccountId] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [vendorId, setVendorId] = useState<string>('');
@@ -29,6 +30,7 @@ export function DetailPage() {
   const [page, setPage] = useState(1);
 
   const { data, isPending, isError } = useTransactions({
+    description: description || undefined,
     accountId: accountId ? Number(accountId) : undefined,
     categoryId: categoryId ? Number(categoryId) : undefined,
     vendorId: vendorId ? Number(vendorId) : undefined,
@@ -46,6 +48,19 @@ export function DetailPage() {
       <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Detail</h1>
 
       <div className="card-surface flex flex-wrap items-end gap-3 p-4">
+        <label className="text-sm text-slate-700 dark:text-slate-300">
+          Search
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Description"
+            className="mt-1 block rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
         <label className="text-sm text-slate-700 dark:text-slate-300">
           Account
           <select
@@ -137,6 +152,7 @@ export function DetailPage() {
         </label>
         <a
           href={transactionExportUrl({
+            description: description || undefined,
             accountId: accountId ? Number(accountId) : undefined,
             categoryId: categoryId ? Number(categoryId) : undefined,
             vendorId: vendorId ? Number(vendorId) : undefined,

@@ -31,6 +31,10 @@ export function deleteCategorisationRule(id: number) {
   return apiFetch<void>(`/categorisation-rules/${id}`, { method: 'DELETE' });
 }
 
+export function deleteAllCategorisationRules() {
+  return apiFetch<void>('/categorisation-rules', { method: 'DELETE' });
+}
+
 export function bulkImportCategorisationRules(input: BulkImportRulesInput) {
   return apiFetch<BulkImportRulesResultDto>('/categorisation-rules/bulk-import', {
     method: 'POST',

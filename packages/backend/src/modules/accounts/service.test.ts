@@ -58,7 +58,8 @@ vi.mock('../jobs/repo', () => ({
   failJob: (jobId: number, message: string) => failJob(jobId, message),
 }));
 
-const { createAccount, deleteAccount, updateAccount } = await import('./service');
+const { createAccount, deleteAccount, updateAccount, triggerCatchUpIngestForWatchedAccounts } =
+  await import('./service');
 
 function makeAccount(overrides: Partial<AccountRow> & { id: number }): AccountRow {
   return {
@@ -138,6 +139,35 @@ describe('createAccount', () => {
     expect(result.ingestJobId).toBe(42);
     expect(prepareIngestPlan).toHaveBeenCalledWith(result.id, 'watch');
     expect(runIngestJob).toHaveBeenCalledWith(42, expect.objectContaining({ totalNewRows: 3 }));
+  });
+});
+
+describe('triggerCatchUpIngestForWatchedAccounts', () => {
+  it('triggers an ingest job for each watched account that has a folder configured', () => {
+    accountsById.set(1, makeAccount({ id: 1, ingestionMode: 'watched', folderPath: '/a', columnMapping: SAMPLE_MAPPING }));
+    accountsById.set(2, makeAccount({ id: 2, ingestionMode: 'watched', folderPath: '/b', columnMapping: SAMPLE_MAPPING }));
+
+    triggerCatchUpIngestForWatchedAccounts();
+
+    expect(prepareIngestPlan).toHaveBeenCalledTimes(2);
+    expect(prepareIngestPlan).toHaveBeenCalledWith(1, 'watch');
+    expect(prepareIngestPlan).toHaveBeenCalledWith(2, 'watch');
+  });
+
+  it('skips manual-mode accounts', () => {
+    accountsById.set(1, makeAccount({ id: 1, ingestionMode: 'manual', folderPath: '/a', columnMapping: SAMPLE_MAPPING }));
+
+    triggerCatchUpIngestForWatchedAccounts();
+
+    expect(prepareIngestPlan).not.toHaveBeenCalled();
+  });
+
+  it('skips a watched account with no folderPath set', () => {
+    accountsById.set(1, makeAccount({ id: 1, ingestionMode: 'watched', folderPath: null, columnMapping: null }));
+
+    triggerCatchUpIngestForWatchedAccounts();
+
+    expect(prepareIngestPlan).not.toHaveBeenCalled();
   });
 });
 

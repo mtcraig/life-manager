@@ -44,6 +44,14 @@ export function useDeleteCategorisationRule() {
   });
 }
 
+export function useDeleteAllCategorisationRules() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => rulesApi.deleteAllCategorisationRules(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: RULES_KEY }),
+  });
+}
+
 export function useBulkImportCategorisationRules() {
   const queryClient = useQueryClient();
   return useMutation({

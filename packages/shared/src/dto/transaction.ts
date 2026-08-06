@@ -19,6 +19,7 @@ export interface TransactionDto {
 
 export const transactionListQuerySchema = z.object({
   accountId: z.coerce.number().int().positive().optional(),
+  description: z.string().min(1).optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   categoryId: z.coerce.number().int().positive().optional(),

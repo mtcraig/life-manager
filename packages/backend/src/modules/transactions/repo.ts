@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or, sql } from 'drizzle-orm';
 import type { TransactionExportQuery, TransactionListQuery } from '@life-manager/shared';
 import { db } from '../../db/client';
 import { transactions } from '../../db/schema/transactions';
@@ -43,6 +43,9 @@ export interface NewTransactionFields {
 function buildFilters(query: TransactionListQuery | TransactionExportQuery) {
   const conditions = [];
   if (query.accountId !== undefined) conditions.push(eq(transactions.accountId, query.accountId));
+  if (query.description !== undefined) {
+    conditions.push(like(transactions.normalizedDescription, `%${query.description.toLowerCase()}%`));
+  }
   if (query.dateFrom !== undefined) conditions.push(gte(transactions.date, query.dateFrom));
   if (query.dateTo !== undefined) conditions.push(lte(transactions.date, query.dateTo));
   if (query.categoryId !== undefined) conditions.push(eq(transactions.categoryId, query.categoryId));
@@ -133,6 +136,16 @@ export function listUncategorised(): TransactionRow[] {
 }
 
 /**
+ * Transactions currently pointing at a specific rule via matchedRuleId — the
+ * candidate set re-evaluated when that rule's pattern/category/vendor
+ * changes, since the edit might mean it no longer matches, might now match a
+ * different rule, or might still match this one.
+ */
+export function listByMatchedRuleId(ruleId: number): TransactionRow[] {
+  return db.select().from(transactions).where(eq(transactions.matchedRuleId, ruleId)).all();
+}
+
+/**
  * Transactions eligible for automatic re-matching when rules change: either
  * field (category or vendor) is never-set or last-set by a rule (not a
  * manual override, which must never be silently overwritten by a rule
@@ -185,6 +198,11 @@ export function setTransactionVendor(
 /** Clears the "which rule matched this" bookkeeping field when that rule is deleted, leaving the transaction's own categoryId/vendorId untouched. */
 export function clearMatchedRuleId(ruleId: number): void {
   db.update(transactions).set({ matchedRuleId: null }).where(eq(transactions.matchedRuleId, ruleId)).run();
+}
+
+/** Clears matchedRuleId bookkeeping on every transaction pointing at any rule — used when all rules are bulk-deleted, mirroring clearMatchedRuleId's single-rule behaviour. */
+export function clearAllMatchedRuleIds(): void {
+  db.update(transactions).set({ matchedRuleId: null }).where(isNotNull(transactions.matchedRuleId)).run();
 }
 
 /** Used by reapplyRulesTo, which computes both fields together in one pass per transaction. */
