@@ -20,11 +20,15 @@ const exportRows: ExportTransactionRow[] = [
   },
 ];
 
+const listTransactionsResult = { items: [], total: 0 };
+
 vi.mock('./repo', () => ({
   listAllTransactionsForExport: vi.fn(() => exportRows),
+  listTransactions: vi.fn(() => listTransactionsResult),
 }));
 
-const { exportTransactionsCsv } = await import('./service');
+const repo = await import('./repo');
+const { exportTransactionsCsv, listTransactions } = await import('./service');
 
 describe('exportTransactionsCsv', () => {
   it('builds a CSV with a header row and one row per transaction', () => {
@@ -40,5 +44,14 @@ describe('exportTransactionsCsv', () => {
     const lines = csv.split('\r\n').filter(Boolean);
 
     expect(lines[2]).toBe('2026-01-10,Current Account,"SALARY, JAN",Uncategorised,,2500.00');
+  });
+});
+
+describe('listTransactions', () => {
+  it('passes the description filter through to the repo unchanged', () => {
+    const query = { description: 'tesco', page: 1, pageSize: 100 };
+    listTransactions(query);
+
+    expect(repo.listTransactions).toHaveBeenCalledWith(query);
   });
 });

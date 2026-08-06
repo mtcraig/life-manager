@@ -82,7 +82,23 @@ export function createRule(input: CreateCategorisationRuleInput): Categorisation
   return { rule: toDto(row), jobId };
 }
 
-/** Fast-path candidate set — see the comment on createRule. */
+function mergeUniqueById(...lists: TransactionRow[][]): TransactionRow[] {
+  const byId = new Map<number, TransactionRow>();
+  for (const list of lists) {
+    for (const txn of list) byId.set(txn.id, txn);
+  }
+  return [...byId.values()];
+}
+
+/**
+ * Re-matches two candidate sets on every edit: transactions previously
+ * matched by *this* rule (its new pattern/category/vendor might no longer
+ * match them, might now match a different rule, or might still match this
+ * one), plus the usual fast uncategorised-transactions pass so an edit can
+ * also pick up new matches. Deliberately not the broader
+ * listUncategorisedOrRuleSourced() sweep every other rule uses — see
+ * reapplyAllRules for that slower, explicitly user-triggered option.
+ */
 export function updateRule(
   id: number,
   input: UpdateCategorisationRuleInput,
@@ -104,7 +120,11 @@ export function updateRule(
     ...(input.matchType !== undefined && { matchType: input.matchType }),
     ...(input.priority !== undefined && { priority: input.priority }),
   });
-  const { jobId } = startRecategoriseJob(transactionsRepo.listUncategorised());
+  const candidates = mergeUniqueById(
+    transactionsRepo.listByMatchedRuleId(id),
+    transactionsRepo.listUncategorised(),
+  );
+  const { jobId } = startRecategoriseJob(candidates);
   return { rule: toDto(row as NonNullable<typeof row>), jobId };
 }
 
@@ -120,6 +140,17 @@ export function deleteRule(id: number): void {
   }
   transactionsRepo.clearMatchedRuleId(id);
   repo.deleteRule(id);
+}
+
+/**
+ * Bulk version of deleteRule: clears the matchedRuleId bookkeeping pointer on
+ * every transaction that has one before deleting every rule row, for the same
+ * FK-ordering reason as the single-rule delete. category/vendor fields are
+ * never touched — only the "which rule matched this" pointer is cleared.
+ */
+export function deleteAllRules(): void {
+  transactionsRepo.clearAllMatchedRuleIds();
+  repo.deleteAllRules();
 }
 
 /**

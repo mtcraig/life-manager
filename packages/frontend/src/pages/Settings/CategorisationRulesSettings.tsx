@@ -5,6 +5,7 @@ import type { CategorisationRuleDto, CreateCategorisationRuleInput } from '@life
 import { PagedListFooter } from '../../components/PagedListFooter.js';
 import { JobProgressBar } from '../../components/JobProgressBar.js';
 import { SkeletonRows } from '../../components/Skeleton.js';
+import { TypeToConfirmDialog } from '../../components/TypeToConfirmDialog.js';
 import { humanizeEnumValue } from '../../lib/humanize.js';
 import { useCategories, useCreateCategory } from '../../hooks/useCategories.js';
 import { useCreateVendor, useVendors } from '../../hooks/useVendors.js';
@@ -14,6 +15,7 @@ import {
   useBulkImportCategorisationRules,
   useCategorisationRules,
   useCreateCategorisationRule,
+  useDeleteAllCategorisationRules,
   useDeleteCategorisationRule,
   useReapplyAllRules,
   useRecategoriseUncategorised,
@@ -33,6 +35,7 @@ export function CategorisationRulesSettings() {
   const createRule = useCreateCategorisationRule();
   const updateRule = useUpdateCategorisationRule();
   const deleteRule = useDeleteCategorisationRule();
+  const deleteAllRules = useDeleteAllCategorisationRules();
   const bulkImport = useBulkImportCategorisationRules();
   const recategorise = useRecategoriseUncategorised();
   const reapplyAll = useReapplyAllRules();
@@ -159,6 +162,10 @@ export function CategorisationRulesSettings() {
     setRecategoriseJobId(null);
   }, [recategoriseJob, queryClient]);
 
+  const [rulesSearch, setRulesSearch] = useState('');
+  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const [deleteAllError, setDeleteAllError] = useState<string | null>(null);
+
   const categoryNameById = new Map(categories?.map((c) => [c.id, c.name]));
   const vendorNameById = new Map(vendors?.map((v) => [v.id, v.name]));
   // Newest-added first for display — independent of the backend's priority-ordered
@@ -166,7 +173,30 @@ export function CategorisationRulesSettings() {
   const sortedRules = rules
     ? [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
     : rules;
-  const pagedRules = usePagedList(sortedRules);
+  const filteredRules = sortedRules?.filter((rule) => {
+    const term = rulesSearch.trim().toLowerCase();
+    if (!term) return true;
+    const categoryName = categoryNameById.get(rule.categoryId) ?? '';
+    const vendorName = vendorNameById.get(rule.vendorId) ?? '';
+    return (
+      rule.pattern.toLowerCase().includes(term) ||
+      categoryName.toLowerCase().includes(term) ||
+      vendorName.toLowerCase().includes(term)
+    );
+  });
+  const pagedRules = usePagedList(filteredRules);
+
+  function handleDeleteAllClick() {
+    setDeleteAllError(null);
+    setConfirmingDeleteAll(true);
+  }
+
+  function handleConfirmedDeleteAll() {
+    setConfirmingDeleteAll(false);
+    deleteAllRules.mutate(undefined, {
+      onError: (error) => setDeleteAllError(error instanceof Error ? error.message : String(error)),
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -448,7 +478,9 @@ export function CategorisationRulesSettings() {
 
       <section className="card-surface p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Rules</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Rules <span className="text-sm font-normal text-slate-500">({rules?.length ?? 0})</span>
+          </h2>
           <div className="flex gap-2">
             <button
               onClick={handleRecategorise}
@@ -467,6 +499,15 @@ export function CategorisationRulesSettings() {
             </button>
           </div>
         </div>
+        <label className="mb-3 block text-sm text-slate-700 dark:text-slate-300">
+          Search
+          <input
+            value={rulesSearch}
+            onChange={(e) => setRulesSearch(e.target.value)}
+            placeholder="Pattern, category, or vendor"
+            className="mt-1 block w-full max-w-xs rounded-md border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
         {recategoriseJobId !== null && (
           <div className="mb-2">
             <JobProgressBar jobId={recategoriseJobId} />
@@ -602,9 +643,38 @@ export function CategorisationRulesSettings() {
             ),
           )}
           {rules?.length === 0 && <li className="py-2 text-sm text-slate-500">No rules yet.</li>}
+          {rules && rules.length > 0 && filteredRules?.length === 0 && (
+            <li className="py-2 text-sm text-slate-500">No rules match your search.</li>
+          )}
         </ul>
         <PagedListFooter state={pagedRules} />
       </section>
+
+      <section className="rounded-lg border border-red-200 bg-white p-4 dark:border-red-900 dark:bg-slate-900">
+        <h3 className="mb-2 text-sm font-semibold text-red-600 dark:text-red-400">Danger zone</h3>
+        <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+          Permanently deletes every categorisation rule. Transactions already categorised by a rule keep
+          their current category and vendor — only the record of which rule matched them is cleared.
+        </p>
+        <button
+          onClick={handleDeleteAllClick}
+          disabled={deleteAllRules.isPending}
+          className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {deleteAllRules.isPending ? 'Deleting…' : 'Delete all rules'}
+        </button>
+        {deleteAllError && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{deleteAllError}</p>}
+      </section>
+
+      {confirmingDeleteAll && (
+        <TypeToConfirmDialog
+          message="This permanently deletes every categorisation rule and cannot be undone. Transactions already categorised by a rule keep their current category and vendor."
+          confirmWord="DELETE"
+          confirmLabel="Delete"
+          onConfirm={handleConfirmedDeleteAll}
+          onCancel={() => setConfirmingDeleteAll(false)}
+        />
+      )}
     </div>
   );
 }

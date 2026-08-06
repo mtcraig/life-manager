@@ -60,3 +60,7 @@ export function updateRule(
 export function deleteRule(id: number): void {
   db.delete(categorisationRules).where(eq(categorisationRules.id, id)).run();
 }
+
+export function deleteAllRules(): void {
+  db.delete(categorisationRules).run();
+}

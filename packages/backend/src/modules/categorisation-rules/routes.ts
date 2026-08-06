@@ -33,6 +33,11 @@ export async function categorisationRuleRoutes(app: FastifyInstance) {
     reply.status(204);
   });
 
+  app.delete('/categorisation-rules', async (_request, reply) => {
+    service.deleteAllRules();
+    reply.status(204);
+  });
+
   app.post('/categorisation-rules/bulk-import', async (request) => {
     const input = bulkImportRulesSchema.parse(request.body);
     return service.bulkImportRules(input);
