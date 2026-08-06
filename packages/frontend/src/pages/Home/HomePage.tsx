@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TopTransactionDto } from '@life-manager/shared';
 import { CalendarHeatmap } from '../../components/calendar-heatmap/CalendarHeatmap.js';
+import { MonthlyHeatmap } from '../../components/calendar-heatmap/MonthlyHeatmap.js';
 import { MonthlyFlowChart } from '../../components/charts/MonthlyFlowChart.js';
 import type { MonthlyFlowPoint } from '../../components/charts/MonthlyFlowChart.js';
 import { SkeletonChart, SkeletonStatGrid } from '../../components/Skeleton.js';
@@ -71,27 +72,28 @@ function TopTransactionsCard({
   );
 }
 
-/** Buckets daily rows into calendar-month totals, keyed and labelled by each day's own year so a multi-year ("All time") range groups correctly instead of collapsing into one label. */
-function groupFlowByMonth(
-  days: { date: string; moneyIn: number; moneyOut: number; net: number }[],
-): MonthlyFlowPoint[] {
-  const byMonth = new Map<string, MonthlyFlowPoint>();
+interface MonthlyBucket {
+  year: number;
+  monthIndex: number; // 0-11
+  moneyIn: number;
+  moneyOut: number;
+  net: number;
+}
+
+/** Buckets daily rows into calendar-month totals, keyed by each day's own year+month so a multi-year ("All time") range groups correctly instead of collapsing into one label. */
+function groupByMonth(days: { date: string; moneyIn: number; moneyOut: number; net: number }[]): MonthlyBucket[] {
+  const byMonth = new Map<string, MonthlyBucket>();
   for (const day of days) {
+    const year = Number(day.date.slice(0, 4));
     const monthIndex = Number(day.date.slice(5, 7)) - 1;
-    const year = day.date.slice(0, 4);
     const key = day.date.slice(0, 7);
-    const existing = byMonth.get(key) ?? {
-      month: `${MONTH_LABELS[monthIndex]} ${year}`,
-      moneyIn: 0,
-      moneyOut: 0,
-      net: 0,
-    };
+    const existing = byMonth.get(key) ?? { year, monthIndex, moneyIn: 0, moneyOut: 0, net: 0 };
     existing.moneyIn += day.moneyIn;
     existing.moneyOut += day.moneyOut;
     existing.net += day.net;
     byMonth.set(key, existing);
   }
-  return [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, point]) => point);
+  return [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, bucket]) => bucket);
 }
 
 export function HomePage() {
@@ -122,13 +124,13 @@ export function HomePage() {
   } = useMoneyFlow(dateRangeForYear(selectedYear));
 
   const heatmapDays = (yearFlow?.days ?? []).map((day) => ({ date: day.date, value: day.net }));
-  const monthlyPoints = groupFlowByMonth(yearFlow?.days ?? []);
-  const heatmapYear =
-    selectedYear === 'all'
-      ? yearFlow?.days.length
-        ? Math.max(...yearFlow.days.map((day) => Number(day.date.slice(0, 4))))
-        : currentYear
-      : selectedYear;
+  const monthlyBuckets = groupByMonth(yearFlow?.days ?? []);
+  const monthlyPoints: MonthlyFlowPoint[] = monthlyBuckets.map((bucket) => ({
+    month: `${MONTH_LABELS[bucket.monthIndex]} ${bucket.year}`,
+    moneyIn: bucket.moneyIn,
+    moneyOut: bucket.moneyOut,
+    net: bucket.net,
+  }));
   const yearLabel = selectedYear === 'all' ? 'all time' : selectedYear;
 
   return (
@@ -188,12 +190,18 @@ export function HomePage() {
 
       <div className="card-surface p-4">
         <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-          Daily money in/out —{' '}
-          {selectedYear === 'all' ? `all time (showing ${heatmapYear})` : selectedYear} (transfers excluded)
+          {selectedYear === 'all'
+            ? 'Money in/out by month — all time (transfers excluded)'
+            : `Daily money in/out — ${selectedYear} (transfers excluded)`}
         </h2>
         {isYearPending && <SkeletonChart className="h-32 w-full" />}
         {isYearError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the yearly heatmap.</p>}
-        {yearFlow && <CalendarHeatmap days={heatmapDays} year={heatmapYear} />}
+        {yearFlow &&
+          (selectedYear === 'all' ? (
+            <MonthlyHeatmap months={monthlyBuckets} />
+          ) : (
+            <CalendarHeatmap days={heatmapDays} year={selectedYear} />
+          ))}
       </div>
     </div>
   );
