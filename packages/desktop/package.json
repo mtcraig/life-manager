@@ -1,8 +1,8 @@
 {
   "name": "@life-manager/desktop",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
-  "description": "Life Manager 0.0.5",
+  "description": "Life Manager 0.0.6",
   "author": "Michael Craig",
   "main": "main.cjs",
   "scripts": {
