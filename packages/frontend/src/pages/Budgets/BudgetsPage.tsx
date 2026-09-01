@@ -59,7 +59,7 @@ function BudgetProgressRow({ item }: { item: BudgetProgressItemDto }) {
 }
 
 /** Stat tiles + composition chart + category grid — identical shape for both the monthly and annual views, just fed different data. */
-function BudgetProgressSection({
+export function BudgetProgressSection({
   progress,
   isPending,
   isError,

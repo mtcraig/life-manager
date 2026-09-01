@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { CreateLiabilityInput, CreatePropertyInput } from '@life-manager/shared';
-import { useNetWorthTrend, useWealthSummary } from '../../hooks/useWealth.js';
-import { NetWorthTrendChart } from '../../components/charts/NetWorthTrendChart.js';
+import { WealthContent } from './WealthContent.js';
+import { useTransactionDateBounds } from '../../hooks/useAnalytics.js';
+import { YearFilter as YearFilterControl } from '../../components/YearFilter.js';
+import type { YearFilterValue } from '../../lib/yearFilter.js';
 import {
   useArchiveProperty,
   useAddPropertyValuation,
@@ -30,35 +32,10 @@ import {
 import { ValuationHistoryPanel } from '../../components/ValuationHistoryPanel.js';
 import { BulkImportCsvForm } from '../../components/BulkImportCsvForm.js';
 import { PropertyMap } from '../../components/PropertyMap.js';
-import { SkeletonChart, SkeletonRows, SkeletonStatGrid } from '../../components/Skeleton.js';
+import { SkeletonRows } from '../../components/Skeleton.js';
 import { formatMoney } from '../../lib/formatMoney.js';
 import { renderValuationImportResult } from '../../lib/bulkImportMessages.js';
 import { BTN_PRIMARY, BTN_ROW_ACTION, BTN_ROW_ACTION_DANGER } from '../../theme/tokens.js';
-
-function SummaryTile({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone?: 'positive' | 'negative' | 'asset';
-}) {
-  const color =
-    tone === 'negative'
-      ? 'text-red-600 dark:text-red-400'
-      : tone === 'positive'
-        ? 'text-green-700 dark:text-green-400'
-        : tone === 'asset'
-          ? 'text-yellow-600 dark:text-yellow-400'
-          : 'text-slate-900 dark:text-slate-100';
-  return (
-    <div className="card-surface p-4">
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${color}`}>{formatMoney(value)}</div>
-    </div>
-  );
-}
 
 function PropertiesSection() {
   const { data: properties, isPending, isError } = useProperties();
@@ -467,41 +444,18 @@ function LiabilitiesSection() {
 }
 
 export function WealthPage() {
-  const { data: summary, isPending, isError } = useWealthSummary();
-  const { data: trend, isPending: isTrendPending, isError: isTrendError } = useNetWorthTrend();
+  const [selectedYear, setSelectedYear] = useState<YearFilterValue>(new Date().getFullYear());
+  const { data: dateBounds } = useTransactionDateBounds();
+  const earliestYear = dateBounds?.earliestDate ? Number(dateBounds.earliestDate.slice(0, 4)) : undefined;
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Wealth</h1>
-
-      <div className="card-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Net worth over time</h2>
-        {isTrendPending && <SkeletonChart className="h-56 w-full" />}
-        {isTrendError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the net worth trend.</p>}
-        {trend && trend.length > 1 && <NetWorthTrendChart points={trend} />}
-        {trend && trend.length <= 1 && (
-          <p className="text-sm text-slate-500">Not enough history yet to chart a trend.</p>
-        )}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Wealth</h1>
+        <YearFilterControl selectedYear={selectedYear} onChange={setSelectedYear} earliestYear={earliestYear} />
       </div>
 
-      {isPending && <SkeletonStatGrid count={4} />}
-      {isError && <p className="text-sm text-red-600 dark:text-red-400">Failed to load the wealth summary.</p>}
-      {summary && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <SummaryTile label="Net wealth" value={summary.netWealth} tone={summary.netWealth >= 0 ? 'positive' : 'negative'} />
-            <SummaryTile label="Liquid assets" value={summary.liquidAssets.total} tone="asset" />
-            <SummaryTile label="Non-liquid assets" value={summary.nonLiquidAssets.total} tone="asset" />
-            <SummaryTile label="Liabilities" value={summary.liabilitiesTotal} tone="negative" />
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <SummaryTile label="Accounts" value={summary.liquidAssets.accountsTotal} />
-            <SummaryTile label="Investments" value={summary.liquidAssets.investmentsTotal} />
-            <SummaryTile label="Properties" value={summary.nonLiquidAssets.propertiesTotal} />
-            <SummaryTile label="Contents" value={summary.nonLiquidAssets.contentsTotal} />
-          </div>
-        </div>
-      )}
+      <WealthContent selectedYear={selectedYear} />
 
       <PropertiesSection />
       <LiabilitiesSection />

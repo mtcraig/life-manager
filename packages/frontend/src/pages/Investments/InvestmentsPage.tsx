@@ -83,7 +83,7 @@ function AddInvestmentForm() {
 }
 
 /** Filters a valuation list to the selected year, matching AccountsPage's chartTrend slicing. */
-function filterValuationsByYear(valuations: ValuationDto[] | undefined, selectedYear: YearFilterValue) {
+export function filterValuationsByYear(valuations: ValuationDto[] | undefined, selectedYear: YearFilterValue) {
   if (!valuations) return valuations;
   const { dateFrom, dateTo } = dateRangeForYear(selectedYear);
   return valuations.filter(
@@ -384,7 +384,7 @@ function ProjectionScenarios() {
   );
 }
 
-function HoldingsSection({ selectedYear }: { selectedYear: YearFilterValue }) {
+export function HoldingsSection({ selectedYear }: { selectedYear: YearFilterValue }) {
   const { data: rows, isPending, isError } = useHoldingsByMonth();
   if (isPending) return <SkeletonChart className="h-56 w-full" />;
   if (isError) return <p className="text-sm text-red-600 dark:text-red-400">Failed to load holdings history.</p>;
