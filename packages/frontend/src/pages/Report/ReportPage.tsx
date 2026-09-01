@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { ReactNode } from 'react';
 import { METER_TYPES } from '@life-manager/shared';
 import type { MeterType } from '@life-manager/shared';
@@ -314,6 +315,7 @@ export function ReportPage() {
   const earliestYear = dateBounds?.earliestDate ? Number(dateBounds.earliestDate.slice(0, 4)) : undefined;
   const { theme, setTheme } = useTheme();
   const preprintThemeRef = useRef<Theme | null>(null);
+  const [printRenderKey, setPrintRenderKey] = useState(0);
 
   useEffect(() => {
     function handleAfterPrint() {
@@ -322,8 +324,22 @@ export function ReportPage() {
         preprintThemeRef.current = null;
       }
     }
+    // Charts measure their container via ResizeObserver and cache that width for
+    // centering things like the legend. window.print() blocks JS while the dialog
+    // is open, so that measurement never gets a chance to re-run against the
+    // narrower print page — the legend stays centered on the wider on-screen width
+    // and clips at the print margin. Forcing every chart to remount here, while
+    // @media print styles are already applied but before the snapshot is taken,
+    // makes them re-measure against the real print width instead of a stale one.
+    function handleBeforePrint() {
+      flushSync(() => setPrintRenderKey((k) => k + 1));
+    }
     window.addEventListener('afterprint', handleAfterPrint);
-    return () => window.removeEventListener('afterprint', handleAfterPrint);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => {
+      window.removeEventListener('afterprint', handleAfterPrint);
+      window.removeEventListener('beforeprint', handleBeforePrint);
+    };
   }, [setTheme]);
 
   function handlePrintClick() {
@@ -355,7 +371,11 @@ export function ReportPage() {
         onPrint={handlePrintClick}
       />
       {visibleSections.map((section, idx) => (
-        <ReportSection key={section.key} title={section.label} isLast={idx === visibleSections.length - 1}>
+        <ReportSection
+          key={`${section.key}-${printRenderKey}`}
+          title={section.label}
+          isLast={idx === visibleSections.length - 1}
+        >
           <ReportSectionBody sectionKey={section.key} detailMode={detailMode} selectedYear={selectedYear} />
         </ReportSection>
       ))}
