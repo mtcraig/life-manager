@@ -12,6 +12,7 @@ import {
   HomeIcon,
   InsuranceIcon,
   InvestmentsIcon,
+  ReportIcon,
   SettingsIcon,
   SubscriptionsIcon,
   WealthIcon,
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/investments', label: 'Investments', icon: InvestmentsIcon },
   { to: '/wealth', label: 'Wealth', icon: WealthIcon },
   { to: '/forecast', label: 'Forecast', icon: ForecastIcon },
+  { to: '/report', label: 'Report', icon: ReportIcon },
   { to: '/insurance', label: 'Insurance', icon: InsuranceIcon },
   { to: '/energy', label: 'Energy', icon: EnergyIcon },
   { to: '/contents', label: 'Contents', icon: ContentsIcon },
@@ -34,8 +36,8 @@ const NAV_ITEMS = [
 
 export function Shell() {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <nav className="flex w-48 shrink-0 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 print:h-auto print:overflow-visible print:bg-white">
+      <nav className="flex w-48 shrink-0 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 print:hidden">
         <div className="mb-6 flex items-center gap-2">
           <svg viewBox="0 0 64 64" className="h-6 w-6 shrink-0" aria-hidden="true">
             <rect width="64" height="64" rx="14" className="fill-slate-900 dark:fill-slate-100" />
@@ -77,7 +79,7 @@ export function Shell() {
         <ServerStatus />
         <ExitButton />
       </nav>
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-8 print:overflow-visible print:p-0">
         <Outlet />
       </main>
     </div>

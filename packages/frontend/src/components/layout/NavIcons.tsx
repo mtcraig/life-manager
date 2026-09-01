@@ -82,6 +82,15 @@ export function ForecastIcon() {
   );
 }
 
+export function ReportIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M9 17v-4M13 17v-7M17 17v-2" />
+    </svg>
+  );
+}
+
 export function InsuranceIcon() {
   return (
     <svg {...ICON_PROPS}>
